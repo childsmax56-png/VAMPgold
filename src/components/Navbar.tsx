@@ -128,12 +128,12 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
                 )}
               </div>
               {/* desktop logo fills the gap between search and center */}
-              <div className="hidden md:flex flex-1 h-full items-center overflow-hidden">
+              <div className="hidden md:block flex-1 h-[64px] overflow-hidden">
                 <img
                   src="/logo.png"
                   alt="VAMP Gold"
                   onClick={onHomeClick}
-                  className="h-[60px] w-full object-contain object-left cursor-pointer hover:opacity-80 transition-opacity duration-300"
+                  className="w-full h-full object-cover object-center cursor-pointer hover:opacity-80 transition-opacity duration-300"
                 />
               </div>
             </div>
