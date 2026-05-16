@@ -80,7 +80,28 @@ export const CUSTOM_IMAGES: Record<string, string> = {
   "Child Rebel Soldier": "https://i.ibb.co/QFLpkFcz/IMG-3998.png",
   "BULLY": "https://a5.mzstatic.com/us/r1000/0/Music221/v4/4b/38/d1/4b38d146-381d-ace2-73df-24074576e62b/656465138828_cover.jpg",
   "Live": "https://i.ibb.co/zhhhyDVq/hq720.jpg",
-  "Other": "https://i.ibb.co/G3VqQV3t/IMG-3890.jpg"
+  "Other": "https://i.ibb.co/G3VqQV3t/IMG-3890.jpg",
+  "Aviation Class": "https://i.ibb.co/7dwDKNGs/fw-Fy11r.jpg",
+  "Killing Me Softly": "https://i.ibb.co/8g2jJc1b/tumblr-lkbw3l-Lx-Ad1qfnd2oo1-540.jpg",
+  "THC: The High Chronicals": "https://i.ibb.co/3Y04DsRv/6q1d-Uzi.png",
+  "Kream": "https://i.ibb.co/G4JF7f7N/tumblr-m76a2c-Bm-D51qfnd2oo1-500.jpg",
+  "Young Mi$fit": "https://i.ibb.co/kVFwht33/tumblr-mdcd9s2-I9-G1qfnd2oo1-500.jpg",
+  "Sen$ation": "https://i.ibb.co/CK8KMmYp/a3383006450-16.jpg",
+  "Awful Records": "https://i.ibb.co/VW5xv70J/artworks-000116608046-icqf3o-t1080x1080.jpg",
+  "Chucky Era": "https://i.ibb.co/TMhhgR5n/artworks-000125767641-af7vmm-t1080x1080.jpg",
+  "Ca$h Carti Season": "https://i.ibb.co/cX7bvMCh/artworks-000180382271-9l3p63-t1080x1080.jpg",
+  "Playboi Carti": "https://i.ibb.co/qFMJNmfm/1200x1200-000000-80-0-0.jpg",
+  "16*29": "https://i.ibb.co/3mqLxnN6/0x1900-000000-80-0-0-DIF-2.jpg",
+  "Die Lit": "https://i.ibb.co/spcmgX6J/die-lit-playboi-carti-hi-res-cover-133548411.jpg",
+  "Whole Lotta Red [V1]": "https://i.ibb.co/6RQMsWx9/WHOLE-LOT-OF-RED.jpg",
+  "WE DON'T DIAL 911": "https://i.imgur.com/mi7p26P.jpeg",
+  "Whole Lotta Red [V2]": "https://i.imgur.com/yKEMmeC.jpeg",
+  "Whole Lotta Red [V3]": "https://i.imgur.com/U2x2OPH.png",
+  "Whole Lotta Red [V4]": "https://i.ibb.co/twpWvXQR/0x1900-000000-80-0-0-DIF-4.jpg",
+  "Narcissist": "https://leaked.cx/data/attachments/32/32684-8c5cc41a21addfa71ca077be38ff3af1.jpg",
+  "MUSIC [V1]": "https://i.ibb.co/PZDxHz50/484456766-1062141895957335-7903129463974570707-n.jpg",
+  "MUSIC [V2]": "https://i.ibb.co/G3kGpbdB/6ac65b919ce5339d3f2707c03b8909ec-1000x1000x1.jpg",
+  "MUSIC [V3]": "https://i.ibb.co/4Z3BndNL/1200x1200.jpg"
 };
 
 export const ALBUM_RELEASE_DATES: Record<string, string> = {
