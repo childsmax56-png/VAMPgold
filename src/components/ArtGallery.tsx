@@ -70,9 +70,43 @@ async function resolveImbbUrl(url: string): Promise<string | null> {
   return promise;
 }
 
+// --- Imgur support ---
+const IMGUR_CLIENT_ID = '546c25a59c58ad7';
+const imgurCache: Map<string, string> = new Map();
+const imgurInFlight: Map<string, Promise<string | null>> = new Map();
+
+function getImgurDirectUrl(url: string): string | null {
+  if (/^https?:\/\/i\.imgur\.com\//.test(url)) return url;
+  // Single image page: imgur.com/XXXXX → i.imgur.com/XXXXX.jpg
+  const m = url.match(/imgur\.com\/([A-Za-z0-9]+)(?:[?#]|$)/);
+  if (m && !url.includes('/a/') && !url.includes('/gallery/')) {
+    return `https://i.imgur.com/${m[1]}.jpg`;
+  }
+  return null;
+}
+
+async function resolveImgurAlbum(albumId: string): Promise<string | null> {
+  if (imgurCache.has(albumId)) return imgurCache.get(albumId)!;
+  if (imgurInFlight.has(albumId)) return imgurInFlight.get(albumId)!;
+
+  const promise = fetch(`https://api.imgur.com/3/album/${albumId}`, {
+    headers: { Authorization: `Client-ID ${IMGUR_CLIENT_ID}` },
+  })
+    .then(r => (r.ok ? r.json() : null))
+    .then((data): string | null => {
+      imgurInFlight.delete(albumId);
+      const link: string | null = data?.data?.images?.[0]?.link ?? null;
+      if (link) imgurCache.set(albumId, link);
+      return link;
+    })
+    .catch((): null => { imgurInFlight.delete(albumId); return null; });
+
+  imgurInFlight.set(albumId, promise);
+  return promise;
+}
+
 function ArtImage({ url, alt, contain = false }: { url: string; alt: string; contain?: boolean }) {
   const [imgSrc, setImgSrc] = useState<string | null>(() => {
-    // Synchronously return cached value if available
     if (url.includes('ibb.co') && !url.includes('i.ibb.co')) {
       return resolvedCache.get(url) ?? null;
     }
@@ -80,12 +114,19 @@ function ArtImage({ url, alt, contain = false }: { url: string; alt: string; con
       const hash = url.split('/f/')[1]?.split('/')[0]?.split('?')[0];
       return hash ? `https://api.pillows.su/api/get/${hash}` : url;
     }
+    if (url.includes('imgur.com')) {
+      const direct = getImgurDirectUrl(url);
+      if (direct) return direct;
+      // album — needs async resolution
+      const cached = imgurCache.get(url.match(/imgur\.com\/(?:a|gallery)\/([A-Za-z0-9]+)/)?.[1] ?? '');
+      return cached ?? null;
+    }
     return url;
   });
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (imgSrc) return; // already resolved (cached or direct)
+    if (imgSrc) return;
     let mounted = true;
     if (url.includes('ibb.co') && !url.includes('i.ibb.co')) {
       resolveImbbUrl(url).then(direct => {
@@ -93,6 +134,15 @@ function ArtImage({ url, alt, contain = false }: { url: string; alt: string; con
         if (direct) setImgSrc(direct);
         else setError(true);
       });
+    } else if (url.includes('imgur.com')) {
+      const albumMatch = url.match(/imgur\.com\/(?:a|gallery)\/([A-Za-z0-9]+)/);
+      if (albumMatch) {
+        resolveImgurAlbum(albumMatch[1]).then(direct => {
+          if (!mounted) return;
+          if (direct) setImgSrc(direct);
+          else setError(true);
+        });
+      }
     }
     return () => { mounted = false; };
   }, [url, imgSrc]);
@@ -247,7 +297,7 @@ export function ArtGallery({ eras, artData, searchQuery, filters }: ArtGalleryPr
         const item = eraItems[i];
         const link = item['Link(s)']?.split('\n')[0]?.trim();
         const lcLink = link?.toLowerCase();
-        const isRenderable = link && (link.includes('ibb.co') || link.includes('pillows.su/f/') || lcLink?.endsWith('.png') || lcLink?.endsWith('.jpg') || lcLink?.endsWith('.jpeg') || link.startsWith('https://i.scdn.co/'));
+        const isRenderable = link && (link.includes('ibb.co') || link.includes('imgur.com') || link.includes('pillows.su/f/') || lcLink?.endsWith('.png') || lcLink?.endsWith('.jpg') || lcLink?.endsWith('.jpeg') || link.startsWith('https://i.scdn.co/'));
         if (link && isRenderable) {
            await handleDownloadFile(link, `${item.Name.split('\n')[0]}`, settings.tagsAsEmojis);
            await new Promise(res => setTimeout(res, 800));
