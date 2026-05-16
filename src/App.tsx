@@ -644,31 +644,6 @@ export default function App() {
         if (Array.isArray(mykData)) {
           const nextJson = JSON.parse(JSON.stringify(json));
           
-          if (!nextJson.eras["Ongoing"]) {
-            nextJson.eras["Ongoing"] = {
-              name: "Ongoing",
-              image: "https://i.ibb.co/dwZ4cwmd/image-2026-04-27-185921217.png",
-              extra: "",
-              data: { "Unreleased Tracks": [] }
-            };
-          }
-
-          if (!nextJson.eras["Jesus Is Born"]) {
-            nextJson.eras["Jesus Is Born"] = {
-              name: "Jesus Is Born",
-              extra: "Sunday Service Choir",
-              data: { "Released Tracks": [] }
-            };
-          }
-
-          if (!nextJson.eras["Sunday Service Choir"]) {
-            nextJson.eras["Sunday Service Choir"] = {
-              name: "Sunday Service Choir",
-              extra: "Yandhi / JESUS IS KING / God's Country / DONDA",
-              data: { "Featured": [] }
-            };
-          }
-
           mykData.forEach((mykItem: any) => {
             const originalEraName = mykItem.Era;
             const matchedMapKey = Object.keys(ERA_MAPPINGS).find(k => k.toLowerCase() === originalEraName?.toLowerCase());
@@ -1853,21 +1828,6 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
     fileInfo: CUSTOM_ALBUM_INFO[era.name] || era.fileInfo
   })) as Era[];
 
-// Order in Related tab: K.T.S.E. → Jesus Is Born → Sunday Service Choir → The Elementary School Dropout
-{
-  const jibIdx = relatedErasArray.findIndex(e => e.name === "Jesus Is Born");
-  const sscIdx = relatedErasArray.findIndex(e => e.name === "Sunday Service Choir");
-
-  const toInsert: Era[] = [];
-  if (jibIdx !== -1) toInsert.push(relatedErasArray[jibIdx]);
-  if (sscIdx !== -1) toInsert.push(relatedErasArray[sscIdx]);
-  [jibIdx, sscIdx].filter(i => i !== -1).sort((a, b) => b - a).forEach(i => relatedErasArray.splice(i, 1));
-
-  // Reinsert after K.T.S.E.
-  const anchor = relatedErasArray.findIndex(e => e.name === "K.T.S.E.");
-  if (anchor !== -1 && toInsert.length > 0) relatedErasArray.splice(anchor + 1, 0, ...toInsert);
-}
-
 // Turbo Grafx 16 and Wolves can end up out of position (Turbo gets renamed from
 // "TurboGrafx 16" via ERA_MAPPINGS, Wolves may be appended after myk merge).
 // Reinsert both right after Cruel Winter [V2]: CW[V2] → Turbo Grafx 16 → Wolves.
@@ -1900,15 +1860,6 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
   }
 }
 
-// Ongoing should always be the last era. Re-pin it in case it shifted.
-{
-  const ongoingIdx = erasArray.findIndex(e => e.name === "Ongoing");
-  if (ongoingIdx !== -1 && ongoingIdx !== erasArray.length - 1) {
-    const ongoingEra = erasArray[ongoingIdx];
-    erasArray.splice(ongoingIdx, 1);
-    erasArray.push(ongoingEra);
-  }
-}
 
 
   const favoritesEra: Era | null = favoriteKeys.length > 0 ? {
