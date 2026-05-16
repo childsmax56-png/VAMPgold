@@ -387,7 +387,7 @@ export function ArtGallery({ eras, artData, searchQuery, filters }: ArtGalleryPr
               {eraItems.map((item, i) => {
                 const link = item['Link(s)']?.split('\n')[0]?.trim();
                 const lcLink = link?.toLowerCase();
-                const isRenderable = link?.includes('ibb.co') || link?.includes('pillows.su/f/') || lcLink?.endsWith('.png') || lcLink?.endsWith('.jpg') || lcLink?.endsWith('.jpeg') || link?.startsWith('https://i.scdn.co/');
+                const isRenderable = link?.includes('ibb.co') || link?.includes('imgur.com') || link?.includes('pillows.su/f/') || lcLink?.endsWith('.png') || lcLink?.endsWith('.jpg') || lcLink?.endsWith('.jpeg') || link?.startsWith('https://i.scdn.co/');
 
                 return (
                   <motion.div
