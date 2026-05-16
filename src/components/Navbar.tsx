@@ -7,7 +7,7 @@ import { SearchFilters } from '../types';
 import { isLastfmLoggedIn, getLastfmUsername, clearLastfmSession, startLastfmAuth } from '../lastfm';
 import { useSettings } from '../SettingsContext';
 
-export type Category = 'music' | 'art' | 'recent' | 'stems' | 'misc' | 'fakes' | 'related' | 'settings' | 'history' | 'tracklists' | 'released' | 'yedits' | 'comps' | 'videos';
+export type Category = 'music' | 'art' | 'recent' | 'stems' | 'misc' | 'fakes' | 'related' | 'settings' | 'history' | 'tracklists' | 'released' | 'videos';
 
 interface NavbarProps {
   searchQuery: string;
@@ -36,8 +36,6 @@ const NAV_CATEGORIES: { key: Category; label: string }[] = [
   { key: 'related', label: 'Related' },
   { key: 'recent', label: 'Recent' },
   { key: 'tracklists', label: 'Tracklists' },
-  { key: 'yedits', label: 'Yedit Affiliates' },
-  { key: 'comps', label: 'Comps' },
   { key: 'videos', label: 'Videos' },
 ];
 
@@ -59,7 +57,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
     return () => document.removeEventListener('mousedown', handler);
   }, [dropdownOpen]);
 
-  const visibleCategories = NAV_CATEGORIES.filter(({ key }) => !(settings.yzyGoldMode && key === 'yedits'));
+  const visibleCategories = NAV_CATEGORIES;
   const activeLabel = visibleCategories.find(c => c.key === activeCategory)?.label ?? 'Navigate';
 
   const handleCategoryClick = (cat: Category) => {
