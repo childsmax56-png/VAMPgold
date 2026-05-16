@@ -169,12 +169,9 @@ interface FilterMenuProps {
 }
 
 const AVAILABLE_TAGS = [
-  { label: 'Lost Media', id: '⁉️' },
   { label: 'AI', id: '🤖' },
   { label: 'Worst Of', id: '🗑️' },
-  { label: 'Unwanted', id: '🚮' },
   { label: 'Special', id: '✨' },
-  { label: 'By YƵYGOLD', id: '💛' },
   { label: 'Grails', id: '🏆' },
   { label: 'Best Of', id: '⭐' },
   { label: 'Wanted', id: '🏅' }
@@ -256,10 +253,10 @@ export function FilterMenu({ filters, setFilters, activeCategory }: FilterMenuPr
 
   const filteredTags = AVAILABLE_TAGS.filter(tag => {
     if (activeCategory === 'stems') {
-      return tag.label === 'Lost Media' || tag.label === 'By YƵYGOLD';
+      return false;
     }
     if (activeCategory === 'misc') {
-      return tag.label === 'Lost Media' || tag.label === 'Best Of' || tag.label === 'By YƵYGOLD';
+      return tag.label === 'Best Of';
     }
     return true;
   });

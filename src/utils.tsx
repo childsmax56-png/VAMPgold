@@ -11,10 +11,7 @@ export const TAG_TOOLTIP_MAP: Record<string, string> = {
   'Wanted': 'Songs that are wanted, but not as wanted as "Grails".',
   'Special': 'special songs that are not good enough to be in Best Of, but still deserves to be highlighted.',
   'Worst Of': 'some of the worst leaks hosted on the tracker.',
-  'Unwanted': 'Songs that we don\'t want to leak in full because they\'re shit',
   'AI': 'Track contains AI vocals.',
-  'Lost Media': 'Is currently lost, or we don\'t have a link to the media.',
-  'By VAMPGOLD': 'Leaks & Songs that added by the owner of the site.'
 };
 
 export const CUSTOM_IMAGES: Record<string, string> = {
