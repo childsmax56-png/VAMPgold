@@ -419,7 +419,10 @@ export function ArtGallery({ eras, artData, searchQuery, filters }: ArtGalleryPr
                     </div>
 
                     <div className="p-3 flex-1 flex flex-col">
-                      <p className="text-sm font-medium text-white mb-2">{item.Name.split('\n')[0]}</p>
+                      <p className="text-sm font-medium text-white mb-1">{item.Name.split('\n')[0]}</p>
+                      {item.Notes && (
+                        <p className="text-[11px] text-white/40 leading-snug mb-2 line-clamp-2">{item.Notes}</p>
+                      )}
                       <div className="flex flex-wrap items-center gap-1.5 mt-auto">
                         {item['Project Type'] && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded border border-white/10 text-white/50 bg-white/5 truncate max-w-[100px]">
