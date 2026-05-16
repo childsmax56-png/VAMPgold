@@ -901,7 +901,7 @@ export default function App() {
         console.error("Failed to fetch Art data:", err);
       });
 
-    Promise.resolve({ data: [] })
+    axios.get('/api/stems')
       .then(res => {
         setStemsData(normalizeEraField(res.data) as StemEntry[]);
       })
@@ -925,7 +925,7 @@ export default function App() {
         console.error("Failed to fetch Released data:", err);
       });
 
-    Promise.resolve({ data: [] })
+    axios.get('/api/fakes')
       .then(res => {
         const rawFakes = normalizeEraField(res.data) as any[];
         const mappedFakes = rawFakes.map(item => {
