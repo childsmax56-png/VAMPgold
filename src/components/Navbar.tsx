@@ -95,7 +95,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
             <div
               className="flex items-center gap-2 flex-1 max-w-[55%] md:max-w-none md:ml-0 transition-opacity duration-500"
             >
-              <div className="relative group flex-1">
+              <div className="relative group w-32 shrink-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
                 <input
                   type="text"
@@ -128,13 +128,12 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
                 )}
               </div>
               {/* desktop logo fills the gap between search and center */}
-              <div className="hidden md:block w-[170px] h-[60px] shrink-0 overflow-hidden">
+              <div className="hidden md:flex flex-1 h-full items-center overflow-hidden">
                 <img
                   src="/logo.png"
-                  alt="YZY Gold"
+                  alt="VAMP Gold"
                   onClick={onHomeClick}
-                  className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-300"
-                  style={{ objectPosition: 'center center' }}
+                  className="h-[60px] w-full object-contain object-left cursor-pointer hover:opacity-80 transition-opacity duration-300"
                 />
               </div>
             </div>
