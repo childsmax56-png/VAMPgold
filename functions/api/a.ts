@@ -26,10 +26,19 @@ export const onRequestGet: PagesFunction = async (context) => {
 
     const eras: Record<string, any> = {};
 
+    // Eras whose song rows use a different name than the header row's Name field.
+    const ERA_ALIAS_MAP: Record<string, string> = {
+      'THC: The High Chronical$': 'The High Chronical$',
+      'Donda': 'Ye - DONDA',
+    };
+
+    // Eras that have no header row in the CSV — include them anyway.
+    const HEADERLESS_ERAS = new Set<string>(['TMB Collab']);
+
     // First pass: collect real era names from header rows.
     // Header rows have newlines in the Era field (file counts).
     // Stats rows also have newlines but their Name field starts with a digit — skip those.
-    const validEraNames = new Set<string>();
+    const validEraNames = new Set<string>(HEADERLESS_ERAS);
     for (const row of rows) {
       const eraField = row['Era'] ?? '';
       if (!eraField.includes('\n')) continue;
@@ -54,9 +63,11 @@ export const onRequestGet: PagesFunction = async (context) => {
           fileInfo: eraField.split('\n').map((l: string) => l.trim()).filter(Boolean),
           data: { 'Unreleased Tracks': [] },
         };
-      } else if (eraField && validEraNames.has(eraField.trim())) {
-        // Regular song row
-        const eraName = eraField.trim();
+      } else if (eraField) {
+        // Regular song row — resolve aliases before lookup
+        const resolved = ERA_ALIAS_MAP[eraField.trim()] ?? eraField.trim();
+        if (!validEraNames.has(resolved)) continue;
+        const eraName = resolved;
         if (!eras[eraName]) {
           eras[eraName] = { name: eraName, data: { 'Unreleased Tracks': [] } };
         }
