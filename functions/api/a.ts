@@ -33,7 +33,7 @@ export const onRequestGet: PagesFunction = async (context) => {
     };
 
     // Eras that have no header row in the CSV — include them anyway.
-    const HEADERLESS_ERAS = new Set<string>(['TMB Collab']);
+    const HEADERLESS_ERAS = new Set<string>(['TrapMoneyBenny Collab']);
 
     // First pass: collect real era names from header rows.
     // Header rows have newlines in the Era field (file counts).

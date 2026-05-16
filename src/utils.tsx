@@ -110,7 +110,7 @@ export const CUSTOM_IMAGES: Record<string, string> = {
   "Cash Carti The Mixtape": "https://i.ibb.co/spDSTTBd/IMG-4071.jpg",
   "Digital Nas Collab": "https://i.ibb.co/cXJ34C8c/IMG-4072.jpg",
   "No Pressure": "https://i.ibb.co/4ngn6sz0/IMG-4076.png",
-  "TMB Collab": "https://i.ibb.co/Pzrdqnhz/IMG-4075.png",
+  "TrapMoneyBenny Collab": "https://i.ibb.co/Pzrdqnhz/IMG-4075.png",
   "Donda": "https://i.ibb.co/S4HZS9hp/Kanye-West-Donda-With-Child.png",
   "Ye - DONDA": "https://i.ibb.co/S4HZS9hp/Kanye-West-Donda-With-Child.png",
   "VULTURES": "https://i.ibb.co/b5CxHHPw/VULTURES-1.jpg",
