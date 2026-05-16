@@ -1,26 +1,43 @@
-import { motion, AnimatePresence } from 'motion/react';
-import { createPortal } from 'react-dom';
-import { ArrowLeft, Play, ExternalLink, X, Share2, Volume2, Check, Download, Loader2, Star } from 'lucide-react';
-import { Era, Song, SearchFilters } from '../types';
 import { useState, useMemo, useEffect } from 'react';
-import { formatTextWithTags, getCleanSongNameWithTags, createSlug, getSongSlug, ALBUM_RELEASE_DATES, matchesFilters, isSongNotAvailable, CUSTOM_IMAGES, getArtistName, buildArtistTag, handleDownloadFile, resolveUrl, detectAudioExt, embedID3Tags, formatTextForNotification } from '../utils';
-import { saveAs } from 'file-saver';
-import { useSettings } from '../SettingsContext';
+import { motion, AnimatePresence } from 'motion/react';
+import { ArrowLeft, ExternalLink, ChevronDown, ChevronUp, Clapperboard } from 'lucide-react';
+import { Era, Song, SearchFilters } from '../types';
+import { createSlug, CUSTOM_IMAGES } from '../utils';
 import { MvEntry, RemixEntry, SampleEntry } from '../App';
-import { findMvsForSong, findRemixesForSong, findSamplesForSong } from './EraDetail';
 
 export interface MiscEntry {
   Era: string;
   Name: string;
   Notes: string;
-  "Copy Length"?: string;
-  "File Date"?: string | { valueType: string };
-  "Image / Length"?: string | { valueType: string };
-  "Date Made"?: string | { valueType: string };
-  "Available Length"?: string;
-  Quality?: string;
-  "Link(s)"?: string;
-  Type?: string;
+  Length: string;
+  'Release Date': string;
+  'Shoot Date': string;
+  Type: string;
+  Availability: string;
+  Status: string;
+  'Link(s)': string;
+}
+
+interface MiscItem {
+  era: string;
+  name: string;
+  notes: string;
+  length: string;
+  releaseDate: string;
+  shootDate: string;
+  type: string;
+  availability: string;
+  status: string;
+  links: string[];
+  section: 'Unreleased' | 'Released';
+}
+
+interface MiscEraGroup {
+  name: string;
+  image?: string;
+  unreleased: MiscItem[];
+  released: MiscItem[];
+  total: number;
 }
 
 interface MiscViewProps {
@@ -38,108 +55,382 @@ interface MiscViewProps {
   favoriteKeys?: { songName: string; eraName: string; url: string }[];
 }
 
-const ERA_MAPPINGS: Record<string, string> = {
-  "Donda [V1]": "DONDA [V1]",
-  "Kids See Ghosts": "KIDS SEE GHOSTS",
-  "KIDS SEE GHOSTS": "KIDS SEE GHOSTS",
-  "Bully": "BULLY [V1]",
-  "BULLY": "BULLY [V1]"
+const TYPE_COLORS: Record<string, string> = {
+  'Studio Footage': 'text-amber-400 border-amber-500/20 bg-amber-500/5',
+  'Documentary': 'text-purple-400 border-purple-500/20 bg-purple-500/5',
+  'Interview': 'text-sky-400 border-sky-500/20 bg-sky-500/5',
+  'Live Performance': 'text-green-400 border-green-500/20 bg-green-500/5',
+  'Promo': 'text-pink-400 border-pink-500/20 bg-pink-500/5',
+  'Promo/Music Video': 'text-rose-400 border-rose-500/20 bg-rose-500/5',
+  'Visualizer': 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5',
+  'Other': 'text-white/40 border-white/10 bg-white/5',
+  'Unknown': 'text-white/30 border-white/10 bg-white/5',
 };
 
-function parseMiscToEras(miscData: MiscEntry[], allEras: Era[]): { eraName: string; image?: string; songs: Song[] }[] {
+const AVAILABILITY_COLORS: Record<string, string> = {
+  'Full': 'text-green-400 border-green-500/20 bg-green-500/5',
+  'OG File': 'text-yellow-400 border-yellow-500/20 bg-yellow-500/5',
+  'Snippet': 'text-blue-400 border-blue-500/20 bg-blue-500/5',
+  'LQ Snippet': 'text-blue-300/70 border-blue-400/15 bg-blue-400/5',
+  'Partial': 'text-orange-400 border-orange-500/20 bg-orange-500/5',
+  'Recording': 'text-purple-400 border-purple-500/20 bg-purple-500/5',
+  'Screenshot': 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5',
+  'Never Recorded': 'text-red-400/50 border-red-500/10 bg-red-500/5',
+};
+
+function extractYouTubeId(url: string): string | null {
+  const patterns = [
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+function getLinkLabel(url: string): string {
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
+  if (url.includes('drive.google.com')) return 'Drive';
+  if (url.includes('pillows.su')) return 'Pillowcase';
+  if (url.includes('archive.org')) return 'Archive.org';
+  if (url.includes('vimeo.com')) return 'Vimeo';
+  if (url.includes('streamable.com')) return 'Streamable';
+  if (url.includes('mega.nz')) return 'MEGA';
+  if (url.includes('tumblr.com')) return 'Tumblr';
+  return 'Link';
+}
+
+function getEmbedSrc(links: string[]): string | null {
+  for (const link of links) {
+    if (link.includes('youtube.com') || link.includes('youtu.be')) {
+      const id = extractYouTubeId(link);
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+  }
+  return null;
+}
+
+function parseMiscData(rows: MiscEntry[], allEras: Era[]): MiscEraGroup[] {
+  const eraGroups: Record<string, { unreleased: MiscItem[]; released: MiscItem[] }> = {};
   const eraOrder: string[] = [];
-  const eraImages: Record<string, string | undefined> = {};
-  const songsByEra: Record<string, Song[]> = {};
 
-  const formatDate = (d: string | { valueType: string } | undefined) => {
-    if (!d || typeof d === 'object') return '';
-    try {
-      if (d.includes('T') || d.includes('Z')) {
-        const date = new Date(d);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        }
-      }
-      return d;
-    } catch { return d; }
-  };
+  for (const row of rows) {
+    const era = row.Era?.trim() || '';
+    const name = row.Name?.trim() || '';
+    if (!era || !name) continue;
 
-  for (const item of miscData) {
-    const isBrokenEra = typeof item.Era === 'string' && (item.Era.includes('OG File') || item.Era.includes('Unavailable'));
-    const isEraHeader = (!item.Era || isBrokenEra) && item.Name && (typeof item["File Date"] === 'object' || typeof item["Date Made"] === 'object');
-
-    if (isEraHeader) {
-      const eraName = item.Name.split('\n')[0];
-      if (!eraOrder.includes(eraName)) {
-        eraOrder.push(eraName);
-        const matchingEra = allEras.find(e => e.name === eraName);
-        eraImages[eraName] = CUSTOM_IMAGES[eraName] || matchingEra?.image;
-      }
-      continue;
+    if (!eraGroups[era]) {
+      eraGroups[era] = { unreleased: [], released: [] };
+      eraOrder.push(era);
     }
 
-    if (!item.Era && item.Name && !item.Quality && !item["Link(s)"]) {
-      continue;
-    }
+    const rawLinks = row['Link(s)'] || '';
+    const links = rawLinks
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l && !l.toLowerCase().includes('link needed') && !l.toLowerCase().includes('source needed'));
 
-    if (item.Era && item.Name) {
-      if (item.Era.includes('OG File(s)')) continue;
+    const rawStatus = row.Status?.trim() || '';
+    const section: 'Unreleased' | 'Released' = rawStatus === 'Unreleased' ? 'Unreleased' : 'Released';
 
-      const eraName = item.Era;
-      if (!songsByEra[eraName]) songsByEra[eraName] = [];
+    const item: MiscItem = {
+      era,
+      name,
+      notes: row.Notes?.trim() || '',
+      length: row.Length?.trim() || '',
+      releaseDate: row['Release Date']?.trim() || '',
+      shootDate: row['Shoot Date']?.trim() || '',
+      type: row.Type?.trim() || '',
+      availability: row.Availability?.trim() || '',
+      status: rawStatus,
+      links,
+      section,
+    };
 
-      const links = item["Link(s)"] ? item["Link(s)"].split('\n').filter(l => l.trim()) : [];
-
-      const song: Song = {
-        name: (typeof item.Name === 'string' ? item.Name : '') + ' [Misc]',
-        description: typeof item.Notes === 'string' ? item.Notes : '',
-        track_length: (typeof item["Copy Length"] === 'string' ? item["Copy Length"] : undefined) || (typeof item["Image / Length"] === 'string' ? item["Image / Length"] : undefined) || '',
-        leak_date: '',
-        file_date: formatDate(item["File Date"] || item["Date Made"]),
-        available_length: typeof item["Available Length"] === 'string' ? item["Available Length"] : '',
-        quality: typeof item.Quality === 'string' ? item.Quality : '',
-        url: links.length > 0 ? links[0] : '',
-        urls: links,
-      };
-
-      songsByEra[eraName].push(song);
-
-      if (!eraOrder.includes(eraName)) {
-        eraOrder.push(eraName);
-        const matchingEra = allEras.find(e => e.name === eraName);
-        eraImages[eraName] = CUSTOM_IMAGES[eraName] || matchingEra?.image;
-      }
+    if (section === 'Unreleased') {
+      eraGroups[era].unreleased.push(item);
+    } else {
+      eraGroups[era].released.push(item);
     }
   }
 
   return eraOrder
-    .filter(name => songsByEra[name] && songsByEra[name].length > 0)
-    .map(name => ({
-      eraName: name + ' [Misc Album]',
-      image: eraImages[name],
-      songs: songsByEra[name]
-    }));
+    .map(name => {
+      const group = eraGroups[name];
+      const matchingEra = allEras.find(e => e.name === name);
+      return {
+        name,
+        image: CUSTOM_IMAGES[name] || matchingEra?.image,
+        unreleased: group.unreleased,
+        released: group.released,
+        total: group.unreleased.length + group.released.length,
+      };
+    })
+    .filter(g => g.total > 0);
 }
 
-export function MiscView({ eras, miscData, searchQuery, filters, onPlaySong, currentSong, isPlaying, mvData = [], remixData = [], samplesData = [], toggleFavorite, favoriteKeys = [] }: MiscViewProps) {
-  const { settings } = useSettings();
-  const [selectedEra, setSelectedEra] = useState<string | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+// ─── Item row ───────────────────────────────────────────────────────────────
 
-  const parsedEras = useMemo(() => {
-    return parseMiscToEras(miscData, eras).filter(era => !era.eraName.startsWith('NASIR') && !era.eraName.startsWith('K.T.S.E.') && !era.eraName.startsWith('NEVER STOP') && !era.eraName.startsWith('DAYTONA'));
-  }, [miscData, eras]);
+function MiscItemRow({ item }: { item: MiscItem }) {
+  const [expanded, setExpanded] = useState(false);
+  const [activeLink, setActiveLink] = useState(0);
+
+  const isUnavailable = !item.links.length;
+  const typeColor = TYPE_COLORS[item.type] || 'text-white/40 border-white/10 bg-white/5';
+  const availColor = AVAILABILITY_COLORS[item.availability] || 'text-white/40 border-white/10 bg-white/5';
+
+  const activeLinkUrl = item.links[activeLink] ?? item.links[0];
+  const embedSrc = activeLinkUrl ? getEmbedSrc([activeLinkUrl]) : null;
+
+  return (
+    <div className={`rounded-md overflow-hidden border transition-colors ${
+      expanded ? 'border-white/15 bg-white/[0.03]' : 'border-transparent hover:border-white/10 hover:bg-white/[0.02]'
+    }`}>
+      <div
+        onClick={() => { if (!isUnavailable) setExpanded(e => !e); }}
+        className={`flex items-start gap-3 px-3 py-2.5 ${isUnavailable ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      >
+        <div className="mt-0.5 shrink-0">
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-white/40" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-white/20" />
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-sm font-medium text-white truncate">{item.name}</span>
+            {item.length && item.length !== 'N/A' && (
+              <span className="text-[10px] text-white/30 shrink-0">{item.length}</span>
+            )}
+          </div>
+          {item.notes && (
+            <p className="text-xs text-white/40 mt-0.5 line-clamp-2">{item.notes}</p>
+          )}
+        </div>
+
+        <div className="shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
+          {item.type && (
+            <span className={`text-[10px] px-2 py-0.5 rounded border font-medium ${typeColor}`}>
+              {item.type}
+            </span>
+          )}
+          {item.availability && item.availability !== 'N/A' && (
+            <span className={`text-[10px] px-2 py-0.5 rounded border font-medium ${availColor}`}>
+              {item.availability}
+            </span>
+          )}
+          {item.status && item.status !== 'Officially Released' && item.status !== 'Unofficially Released' && (
+            <span className="text-[10px] px-2 py-0.5 rounded border border-white/10 text-white/50 bg-white/5">
+              {item.status}
+            </span>
+          )}
+          {item.links.length > 0 && !expanded && (
+            <ExternalLink className="w-3.5 h-3.5 text-white/30" />
+          )}
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="px-3 pb-4 space-y-3">
+              {item.links.length > 1 && (
+                <div className="flex gap-2 flex-wrap">
+                  {item.links.map((link, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveLink(i)}
+                      className={`text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer ${
+                        i === activeLink
+                          ? 'border-[var(--theme-color)] text-[var(--theme-color)] bg-[var(--theme-color)]/10'
+                          : 'border-white/10 text-white/50 hover:border-white/30 hover:text-white'
+                      }`}
+                    >
+                      {getLinkLabel(link)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {embedSrc ? (
+                <div className="w-full aspect-video rounded-md overflow-hidden bg-black">
+                  <iframe
+                    src={embedSrc}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                item.links.length > 0 && (
+                  <div className="text-xs text-white/40 italic">
+                    No embeddable player available for this source.
+                  </div>
+                )
+              )}
+
+              {item.links.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {item.links.map((link, i) => (
+                    <a
+                      key={i}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-[var(--theme-color)]/70 hover:text-[var(--theme-color)] transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      {getLinkLabel(link)}
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {item.releaseDate && item.releaseDate !== 'N/A' && (
+                <p className="text-[10px] text-white/30">Released: {item.releaseDate}</p>
+              )}
+              {item.shootDate && item.shootDate !== 'N/A' && (
+                <p className="text-[10px] text-white/30">Filmed: {item.shootDate}</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Era detail view ─────────────────────────────────────────────────────────
+
+function EraDetailView({ eraGroup, onBack, searchQuery }: {
+  eraGroup: MiscEraGroup;
+  onBack: () => void;
+  searchQuery: string;
+}) {
+  const filterItems = (items: MiscItem[]) => {
+    if (!searchQuery) return items;
+    const q = searchQuery.toLowerCase();
+    return items.filter(
+      i => i.name.toLowerCase().includes(q) || i.notes.toLowerCase().includes(q) || i.type.toLowerCase().includes(q)
+    );
+  };
+
+  const filteredUnreleased = filterItems(eraGroup.unreleased);
+  const filteredReleased = filterItems(eraGroup.released);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, filter: 'blur(10px)' }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="absolute inset-0 z-10 bg-yzy-black overflow-y-auto custom-scrollbar pb-64"
+    >
+      <div className="p-6 md:p-8 flex flex-col md:flex-row items-start gap-6 md:gap-8 border-b border-white/5 bg-white/5">
+        <button
+          onClick={onBack}
+          className="cursor-pointer mt-1 flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+
+        <div className="w-32 h-32 md:w-48 md:h-48 rounded-md overflow-hidden bg-white/5 shrink-0 shadow-xl">
+          {eraGroup.image ? (
+            <img
+              src={eraGroup.image}
+              alt={eraGroup.name}
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Clapperboard className="w-12 h-12 text-white/20" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col justify-end h-full py-2">
+          <div className="flex items-center gap-4 mb-3 flex-wrap">
+            <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
+              {eraGroup.name}
+            </h1>
+            <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Misc
+            </span>
+          </div>
+          <p className="text-white/50 text-sm">
+            {eraGroup.unreleased.length > 0 && `${eraGroup.unreleased.length} unreleased`}
+            {eraGroup.unreleased.length > 0 && eraGroup.released.length > 0 && ' · '}
+            {eraGroup.released.length > 0 && `${eraGroup.released.length} released`}
+          </p>
+        </div>
+      </div>
+
+      <div className="px-4 md:px-8 mt-6 max-w-4xl mx-auto space-y-8">
+        {filteredUnreleased.length > 0 && (
+          <section>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-orange-400/70" />
+              Unreleased
+            </h2>
+            <div className="space-y-1">
+              {filteredUnreleased.map((item, i) => (
+                <MiscItemRow key={i} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {filteredReleased.length > 0 && (
+          <section>
+            <h2 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-3 flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-green-400/70" />
+              Released
+            </h2>
+            <div className="space-y-1">
+              {filteredReleased.map((item, i) => (
+                <MiscItemRow key={i} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {filteredUnreleased.length === 0 && filteredReleased.length === 0 && (
+          <p className="text-white/40 text-sm text-center py-8">No results found.</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Main view ───────────────────────────────────────────────────────────────
+
+export function MiscView({ eras, miscData, searchQuery }: MiscViewProps) {
+  const [selectedEra, setSelectedEra] = useState<string | null>(null);
+
+  const eraGroups = useMemo(() => parseMiscData(miscData, eras), [miscData, eras]);
 
   useEffect(() => {
     const path = window.location.pathname;
     if (path.startsWith('/misc/')) {
       const slug = path.split('/misc/')[1];
       if (slug) {
-        const match = parsedEras.find(e => createSlug(e.eraName) === slug);
-        if (match) setSelectedEra(match.eraName);
+        const match = eraGroups.find(g => createSlug(g.name) === slug);
+        if (match) setSelectedEra(match.name);
       }
     }
-  }, [parsedEras]);
+  }, [eraGroups]);
 
   useEffect(() => {
     if (selectedEra) {
@@ -159,401 +450,101 @@ export function MiscView({ eras, miscData, searchQuery, filters, onPlaySong, cur
       const path = window.location.pathname;
       if (path.startsWith('/misc/')) {
         const slug = path.split('/misc/')[1];
-        const match = parsedEras.find(e => createSlug(e.eraName) === slug);
-        setSelectedEra(match ? match.eraName : null);
+        const match = eraGroups.find(g => createSlug(g.name) === slug);
+        setSelectedEra(match ? match.name : null);
       } else if (path === '/misc') {
         setSelectedEra(null);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [parsedEras]);
+  }, [eraGroups]);
 
-  const filteredEras = useMemo(() => {
-    const hasActiveFilters = filters.tags.length > 0 || filters.qualities.length > 0 || (filters.availableLengths && filters.availableLengths.length > 0) || filters.durationValue !== '' || filters.playableOnly;
-    if (!searchQuery && !hasActiveFilters) return parsedEras;
+  const filteredGroups = useMemo(() => {
+    if (!searchQuery) return eraGroups;
+    const q = searchQuery.toLowerCase();
+    return eraGroups.filter(g =>
+      g.name.toLowerCase().includes(q) ||
+      [...g.unreleased, ...g.released].some(
+        i => i.name.toLowerCase().includes(q) || i.notes.toLowerCase().includes(q) || i.type.toLowerCase().includes(q)
+      )
+    );
+  }, [eraGroups, searchQuery]);
 
-    return parsedEras.map(era => {
-      if (!hasActiveFilters && searchQuery && era.eraName.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return era;
-      }
+  const selectedGroup = useMemo(
+    () => eraGroups.find(g => g.name === selectedEra) || null,
+    [eraGroups, selectedEra]
+  );
 
-      const matchingSongs = era.songs.filter(s => {
-        if (!matchesFilters(s, searchQuery, filters)) return false;
-
-        if (filters.hasClips) {
-          const has = findMvsForSong(s.name, era.eraName, mvData).length > 0;
-          if (filters.hasClips === 'include' && !has) return false;
-          if (filters.hasClips === 'exclude' && has) return false;
-        }
-
-        if (filters.hasRemixes) {
-          const has = findRemixesForSong(s.name, era.eraName, remixData).length > 0;
-          if (filters.hasRemixes === 'include' && !has) return false;
-          if (filters.hasRemixes === 'exclude' && has) return false;
-        }
-
-        if (filters.hasSamples) {
-          const has = findSamplesForSong(s.name, era.eraName, samplesData).length > 0;
-          if (filters.hasSamples === 'include' && !has) return false;
-          if (filters.hasSamples === 'exclude' && has) return false;
-        }
-
-        return true;
-      });
-      return { ...era, songs: matchingSongs };
-    }).filter(era => era.songs.length > 0);
-  }, [parsedEras, searchQuery, filters]);
-
-  const selectedEraData = useMemo(() => {
-    if (!selectedEra) return null;
-    return parsedEras.find(e => e.eraName === selectedEra) || null;
-  }, [selectedEra, parsedEras]);
-
-  const filteredSongs = useMemo(() => {
-    if (!selectedEraData) return [];
-
-    const hasActiveFilters = filters.tags.length > 0 || filters.qualities.length > 0 || (filters.availableLengths && filters.availableLengths.length > 0) || filters.durationValue !== '' || filters.playableOnly;
-    if (!searchQuery && !hasActiveFilters) return selectedEraData.songs;
-
-    return selectedEraData.songs.filter(s => {
-      if (!matchesFilters(s, searchQuery, filters)) return false;
-
-      if (filters.hasClips) {
-        const has = findMvsForSong(s.name, selectedEraData.eraName, mvData).length > 0;
-        if (filters.hasClips === 'include' && !has) return false;
-        if (filters.hasClips === 'exclude' && has) return false;
-      }
-
-      if (filters.hasRemixes) {
-        const has = findRemixesForSong(s.name, selectedEraData.eraName, remixData).length > 0;
-        if (filters.hasRemixes === 'include' && !has) return false;
-        if (filters.hasRemixes === 'exclude' && has) return false;
-      }
-
-      if (filters.hasSamples) {
-        const has = findSamplesForSong(s.name, selectedEraData.eraName, samplesData).length > 0;
-        if (filters.hasSamples === 'include' && !has) return false;
-        if (filters.hasSamples === 'exclude' && has) return false;
-      }
-
-      return true;
-    });
-  }, [selectedEraData, searchQuery, filters]);
-
-  const allPlayableSongs = useMemo(() => {
-    return filteredSongs.filter(s => {
-      const rawUrl = s.url || (s.urls && s.urls.length > 0 ? s.urls[0] : '');
-      const isNotAvailable = isSongNotAvailable(s, rawUrl);
-      return rawUrl && rawUrl.includes('pillows.su/f/') && !isNotAvailable;
-    });
-  }, [filteredSongs]);
-
-  const handleShare = (song: Song, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!selectedEra || !selectedEraData) return;
-    const shareUrl = `${window.location.origin}/misc/${createSlug(selectedEra)}?song=${getSongSlug(song, selectedEraData.songs)}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setToastMessage('Link copied!');
-      setTimeout(() => setToastMessage(null), 2000);
-    });
-  };
-
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleDownloadAlbum = async () => {
-    if (!allPlayableSongs.length) return;
-    setIsDownloading(true);
-    setToastMessage(`Preparing download for ${allPlayableSongs.length} items...`);
-
-    const miscEraName = selectedEraData!.eraName.replace(' [Misc Album]', '');
-    const JSZip = (await import('jszip')).default;
-    const zip = new JSZip();
-
-    await Promise.all(allPlayableSongs.map(async (song) => {
-      const rawUrl = song.url || (song.urls && song.urls.length > 0 ? song.urls[0] : '');
-      if (!rawUrl || !(rawUrl.includes('pillows.su/f/') || rawUrl.includes('temp.imgur.gg/f/') || rawUrl.includes('ibb.co') || rawUrl.match(/\.(png|jpg|jpeg)$/i) || rawUrl.startsWith('https://i.scdn.co/'))) return;
-      try {
-        const { fetchUrl, isImage, imageExt } = await resolveUrl(rawUrl);
-        const res = await fetch(fetchUrl);
-        if (!res.ok) throw new Error('fetch failed');
-        let blob = await res.blob();
-        const songTitle = song.name.includes(' - ') ? song.name.substring(song.name.indexOf(' - ') + 3) : song.name;
-        const fileName = settings.tagsAsEmojis ? song.name : formatTextForNotification(song.name, false);
-        let ext: string;
-        if (isImage) {
-          ext = imageExt || await detectAudioExt(blob);
-        } else {
-          ext = await detectAudioExt(blob);
-          if (settings.embedMetadata && ext === '.mp3') {
-            const artUrl = selectedEraData!.image || CUSTOM_IMAGES[miscEraName];
-            try {
-              blob = await embedID3Tags(blob, {
-                title: songTitle,
-                artist: buildArtistTag(song.name, miscEraName),
-                album: miscEraName,
-                year: ALBUM_RELEASE_DATES[miscEraName]?.split('/').pop(),
-                artworkUrl: artUrl,
-              }, songTitle);
-            } catch { /* skip tagging, save raw */ }
-          }
-        }
-        zip.file(`${fileName}${ext}`, blob);
-      } catch (err) {
-        console.error(`Failed to download ${song.name}:`, err);
-      }
-    }));
-
-    setToastMessage('Zipping...');
-    const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, `${miscEraName}.zip`);
-    setToastMessage(null);
-    setIsDownloading(false);
-  };
-
-  const [zoomedImage, setZoomedImage] = useState(false);
-
-  if (selectedEraData) {
-    const dummyEra: Era = {
-      name: selectedEraData.eraName,
-      image: selectedEraData.image,
-      data: {}
-    };
-
-    return (
-      <>
-        {typeof document !== 'undefined' && createPortal(
-          <AnimatePresence>
-            {zoomedImage && selectedEraData.image && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setZoomedImage(false)}
-                className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out backdrop-blur-sm"
-              >
-                <img src={selectedEraData.image} alt={selectedEraData.eraName} className="max-w-full max-h-full object-contain shadow-2xl rounded-md" referrerPolicy="no-referrer" />
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
+  return (
+    <>
+      {selectedGroup ? (
+        <EraDetailView
+          eraGroup={selectedGroup}
+          onBack={() => setSelectedEra(null)}
+          searchQuery={searchQuery}
+        />
+      ) : (
         <motion.div
+          key="misc-grid"
           initial={{ opacity: 0, filter: 'blur(10px)' }}
           animate={{ opacity: 1, filter: 'blur(0px)' }}
           exit={{ opacity: 0, filter: 'blur(10px)' }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="absolute inset-0 z-10 bg-yzy-black overflow-y-auto pb-64"
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="p-6 md:p-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-32"
         >
-          <div className="p-6 md:p-8 flex flex-col md:flex-row items-start gap-6 md:gap-8 border-b border-white/5 bg-white/5">
-            <button onClick={() => setSelectedEra(null)} className="cursor-pointer mt-1 flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-
-            <div
-              className={`w-32 h-32 md:w-48 md:h-48 rounded-md overflow-hidden bg-white/5 shrink-0 shadow-xl ${selectedEraData.image ? 'cursor-pointer' : ''}`}
-              onClick={() => { if (selectedEraData.image) setZoomedImage(true); }}
-              title={selectedEraData.image ? "Click to zoom" : undefined}
+          {filteredGroups.map((group, i) => (
+            <motion.div
+              key={group.name}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.02, 0.5), duration: 0.3 }}
+              onClick={() => setSelectedEra(group.name)}
+              className="group flex flex-col gap-3 cursor-pointer"
             >
-              {selectedEraData.image ? (
-                <img src={selectedEraData.image} alt={selectedEraData.eraName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white/20 text-center p-4">{selectedEraData.eraName}</div>
-              )}
-            </div>
-
-            <div className="flex flex-col justify-end h-full py-2">
-              <div className="flex items-center gap-4 mb-3 flex-wrap">
-                <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight flex items-center gap-4 flex-wrap">
-                  <div className="truncate">{formatTextWithTags(selectedEraData.eraName)}</div>
-                </h1>
-                <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Misc
-                </span>
-
-                <div className="flex items-center gap-2 ml-2">
-                  <button
-                    onClick={handleDownloadAlbum}
-                    disabled={isDownloading}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors cursor-pointer"
-                    title="Download all items"
-                  >
-                    {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const baseUrl = window.location.origin + window.location.pathname;
-                      navigator.clipboard.writeText(baseUrl);
-                      setToastMessage("Album link copied!");
-                      setTimeout(() => setToastMessage(null), 3000);
-                    }}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-colors cursor-pointer"
-                    title="Copy album link"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
+              <div className="relative aspect-square rounded-md overflow-hidden bg-white/5 border border-white/5 group-hover:border-white/20 transition-colors">
+                {group.image ? (
+                  <img
+                    src={group.image}
+                    alt={group.name}
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-white/5">
+                    <Clapperboard className="w-10 h-10 text-white/20" />
+                  </div>
+                )}
+                <div className="absolute bottom-2 right-2 flex flex-col gap-1 items-end">
+                  {group.unreleased.length > 0 && (
+                    <span className="bg-black/70 backdrop-blur-sm text-orange-400 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                      {group.unreleased.length} Unrel.
+                    </span>
+                  )}
+                  {group.released.length > 0 && (
+                    <span className="bg-black/70 backdrop-blur-sm text-green-400 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+                      {group.released.length} Rel.
+                    </span>
+                  )}
                 </div>
               </div>
-              <p className="text-white/50 text-sm">Album Copies, Alternate Versions & More</p>
-            </div>
-          </div>
 
-          <div className="px-6 md:px-8 mt-8 max-w-6xl mx-auto">
-            <div className="mb-10">
-              <div className="flex flex-col">
-                <div className="flex items-center px-4 py-2 text-xs font-semibold text-white/40 uppercase tracking-wider border-b border-white/5 mb-2 hidden sm:flex">
-                  <div className="w-8">#</div>
-                  <div className="flex-1">Title</div>
-                  <div className="w-28">Quality</div>
-                  <div className="w-20 text-right">Length</div>
-                  <div className="w-10"></div>
-                </div>
-
-                {filteredSongs.map((song, i) => {
-                  const rawUrl = song.url || (song.urls && song.urls.length > 0 ? song.urls[0] : '');
-                  const isNotAvailable = isSongNotAvailable(song, rawUrl);
-                  const lowerUrl = (rawUrl || '').toLowerCase();
-                  const isTrulyEmptyLink = !rawUrl || lowerUrl === 'n/a' || lowerUrl.includes('link needed') || lowerUrl.includes('source needed');
-                  const isPlayable = rawUrl.includes('pillows.su/f/') && !isNotAvailable;
-                  const isEmpty = isTrulyEmptyLink || isNotAvailable || lowerUrl.includes('n/a');
-                  const isCurrentlyPlaying = (currentSong?.url && song.url && currentSong.url === song.url) ||
-                    (currentSong?.urls && song.urls && currentSong.urls.length > 0 && song.urls.length > 0 && currentSong.urls[0] === song.urls[0]);
-
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => !isEmpty && onPlaySong(song, dummyEra, allPlayableSongs)}
-                      className={`group flex items-center px-4 py-2.5 rounded-md transition-colors ${isEmpty ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'} ${isCurrentlyPlaying ? 'bg-white/5' : ''}`}
-                    >
-                      <div className={`w-8 text-sm font-mono flex items-center ${isCurrentlyPlaying ? 'text-[var(--theme-color)]' : 'text-white/40 group-hover:text-white'}`}>
-                        <span className="group-hover:hidden">
-                          {isCurrentlyPlaying ? <Volume2 className={`w-4 h-4 ${isPlaying ? 'animate-pulse' : ''}`} /> : (i + 1)}
-                        </span>
-                        {isEmpty ? (
-                          <X className="w-4 h-4 hidden group-hover:block" />
-                        ) : isPlayable ? (
-                          <Play className="w-4 h-4 hidden group-hover:block" />
-                        ) : (
-                          <ExternalLink className="w-4 h-4 hidden group-hover:block" />
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0 pr-4">
-                        <div className={`flex items-baseline gap-2 truncate font-medium ${isCurrentlyPlaying ? 'text-[var(--theme-color)]' : 'text-white'}`}>
-                          {formatTextWithTags(song.name)}
-                        </div>
-                        {song.description && <div className={`flex items-center gap-2 text-xs truncate mt-0.5 ${isCurrentlyPlaying ? 'text-[var(--theme-color)]/40' : 'text-white/40'}`}>{formatTextWithTags(song.description.split('\n')[0])}</div>}
-                        {song.file_date && <div className={`text-[10px] mt-0.5 ${isCurrentlyPlaying ? 'text-[var(--theme-color)]/30' : 'text-white/30'}`}>Date: {song.file_date}</div>}
-                      </div>
-
-                      <div className="w-28 shrink-0 hidden sm:flex items-center gap-1.5 flex-wrap">
-                        {song.quality && (
-                          <span className={`text-[10px] px-2 py-0.5 rounded border ${isCurrentlyPlaying ? 'border-[var(--theme-color)]/20 text-[var(--theme-color)]/80 bg-[var(--theme-color)]/5' : 'border-white/10 text-white/60 bg-white/5'}`}>
-                            {song.quality}
-                          </span>
-                        )}
-                        {song.available_length && (
-                          <span className={`text-[10px] px-2 py-0.5 rounded border ${isCurrentlyPlaying ? 'border-[var(--theme-color)]/20 text-[var(--theme-color)]/80 bg-[var(--theme-color)]/5' : 'border-white/10 text-white/60 bg-white/5'}`}>
-                            {song.available_length}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="w-20 shrink-0 hidden sm:flex items-center justify-end text-right text-xs font-mono whitespace-nowrap">
-                        <span className={`${isCurrentlyPlaying ? 'text-[var(--theme-color)]/60' : 'text-white/40'}`}>{song.track_length || '-:--'}</span>
-                      </div>
-
-                      <div className="w-10 shrink-0 flex items-center justify-end gap-2">
-                        {(() => {
-                          if (!isPlayable || !toggleFavorite || song.name === "Alright but the beat is Father Stretch My Hands Pt. 1") return null;
-                          const rawUrl = song.url || (song.urls && song.urls.length > 0 ? song.urls[0] : '');
-                          const isStarred = favoriteKeys.some(k => k.songName === song.name && k.url === rawUrl);
-                          return (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); toggleFavorite(song, 'Misc'); }}
-                              className={`p-1 rounded transition-all hover:bg-[var(--theme-color)]/20 cursor-pointer ${isStarred ? 'text-[var(--theme-color)]' : 'text-white/20 hover:text-[var(--theme-color)]'}`}
-                              title={isStarred ? "Remove from Favorites" : "Add to Favorites"}
-                            >
-                              <Star className="w-3.5 h-3.5" fill={isStarred ? "currentColor" : "none"} />
-                            </button>
-                          );
-                        })()}
-                        {!isEmpty && (
-                          <button
-                            onClick={(e) => handleShare(song, e)}
-                            className="p-1 hover:bg-white/10 rounded cursor-pointer"
-                            title="Copy link"
-                          >
-                            <Share2 className="w-3.5 h-3.5 text-white/50 hover:text-white" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div>
+                <h3 className="text-sm font-bold text-white group-hover:underline truncate">
+                  {group.name}
+                </h3>
+                <p className="text-xs text-white/40">{group.total} item{group.total !== 1 ? 's' : ''}</p>
               </div>
+            </motion.div>
+          ))}
+
+          {filteredGroups.length === 0 && (
+            <div className="col-span-full text-center py-16 text-white/30 text-sm">
+              No eras found.
             </div>
-          </div>
+          )}
         </motion.div>
-
-        {typeof document !== 'undefined' && createPortal(
-          <AnimatePresence>
-            {toastMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 50, scale: 0.9 }}
-                className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-[#0ba345] text-white px-6 py-3.5 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)] text-[15px] font-medium tracking-wide z-[9999] flex items-center gap-3"
-              >
-                <Check className="w-5 h-5 stroke-[2.5]" />
-                {toastMessage}
-              </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
-      </>
-    );
-  }
-
-  return (
-    <motion.div
-      key="misc-grid"
-      initial={{ opacity: 0, filter: 'blur(10px)' }}
-      animate={{ opacity: 1, filter: 'blur(0px)' }}
-      exit={{ opacity: 0, filter: 'blur(10px)' }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="p-6 md:p-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 pb-32"
-    >
-      {filteredEras.map((era, i) => (
-        <motion.div
-          key={era.eraName}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: Math.min(i * 0.02, 0.5), duration: 0.3 }}
-          onClick={() => setSelectedEra(era.eraName)}
-          className="group flex flex-col gap-3 cursor-pointer"
-        >
-          <div className="relative aspect-square rounded-md overflow-hidden bg-white/5 border border-white/5 group-hover:border-white/20 transition-colors">
-            {era.image ? (
-              <img src={era.image} alt={era.eraName} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-white/5 text-white/20 font-bold text-2xl text-center p-4">
-                {era.eraName}
-              </div>
-            )}
-            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white/80 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded">
-              {era.songs.length} {era.songs.length === 1 ? 'Copy' : 'Copies'}
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-sm font-bold text-white group-hover:underline truncate flex items-center gap-2">
-              <div className="truncate">{formatTextWithTags(era.eraName)}</div>
-            </h3>
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
+      )}
+    </>
   );
 }

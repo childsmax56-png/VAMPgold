@@ -11,10 +11,11 @@ export interface VideoRawEntry {
   Name: string;
   Notes: string;
   Length: string;
-  'Date Made': string;
+  'Release Date': string;
+  'Shoot Date': string;
   Type: string;
-  'Available Length': string;
-  Quality: string;
+  Availability: string;
+  Status: string;
   'Link(s)': string;
 }
 
@@ -23,10 +24,11 @@ interface VideoEntry {
   name: string;
   notes: string;
   length: string;
-  dateMade: string;
+  releaseDate: string;
+  shootDate: string;
   type: string;
-  availableLength: string;
-  quality: string;
+  availability: string;
+  status: string;
   links: string[];
   section: 'Unreleased' | 'Released';
 }
@@ -111,7 +113,6 @@ function getLinkLabel(url: string): string {
 }
 
 function parseVideosData(rows: VideoRawEntry[], allEras: Era[]): VideoEraGroup[] {
-  let currentSection: 'Unreleased' | 'Released' = 'Unreleased';
   const eraGroups: Record<string, { unreleased: VideoEntry[]; released: VideoEntry[] }> = {};
   const eraOrder: string[] = [];
 
@@ -119,12 +120,7 @@ function parseVideosData(rows: VideoRawEntry[], allEras: Era[]): VideoEraGroup[]
     const era = row.Era?.trim() || '';
     const name = row.Name?.trim() || '';
 
-    if (!era) {
-      if (name === 'Unreleased') currentSection = 'Unreleased';
-      else if (name === 'Released') currentSection = 'Released';
-      continue;
-    }
-    if (!name) continue;
+    if (!era || !name) continue;
 
     if (!eraGroups[era]) {
       eraGroups[era] = { unreleased: [], released: [] };
@@ -137,20 +133,25 @@ function parseVideosData(rows: VideoRawEntry[], allEras: Era[]): VideoEraGroup[]
       .map((l: string) => l.trim())
       .filter((l: string) => l && !l.toLowerCase().includes('link needed') && !l.toLowerCase().includes('source needed'));
 
+    const rawStatus = row.Status?.trim() || '';
+    const section: 'Unreleased' | 'Released' =
+      rawStatus === 'Unreleased' ? 'Unreleased' : 'Released';
+
     const entry: VideoEntry = {
       era,
       name,
       notes: row.Notes?.trim() || '',
       length: row.Length?.trim() || '',
-      dateMade: row['Date Made']?.trim() || '',
+      releaseDate: row['Release Date']?.trim() || '',
+      shootDate: row['Shoot Date']?.trim() || '',
       type: row.Type?.trim() || '',
-      availableLength: row['Available Length']?.trim() || '',
-      quality: row.Quality?.trim() || '',
+      availability: row.Availability?.trim() || '',
+      status: rawStatus,
       links,
-      section: currentSection,
+      section,
     };
 
-    if (currentSection === 'Unreleased') {
+    if (section === 'Unreleased') {
       eraGroups[era].unreleased.push(entry);
     } else {
       eraGroups[era].released.push(entry);
@@ -172,13 +173,15 @@ function parseVideosData(rows: VideoRawEntry[], allEras: Era[]): VideoEraGroup[]
     .filter(g => g.total > 0);
 }
 
-const AVAILABLE_LENGTH_COLORS: Record<string, string> = {
+const AVAILABILITY_COLORS: Record<string, string> = {
   'Full': 'text-green-400 border-green-500/20 bg-green-500/5',
   'OG File': 'text-yellow-400 border-yellow-500/20 bg-yellow-500/5',
   'Snippet': 'text-blue-400 border-blue-500/20 bg-blue-500/5',
+  'LQ Snippet': 'text-blue-300/70 border-blue-400/15 bg-blue-400/5',
   'Partial': 'text-orange-400 border-orange-500/20 bg-orange-500/5',
-  'Confirmed': 'text-white/40 border-white/10 bg-white/5',
-  'Rumored': 'text-white/30 border-white/10 bg-white/5',
+  'Recording': 'text-purple-400 border-purple-500/20 bg-purple-500/5',
+  'Screenshot': 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5',
+  'N/A': 'text-white/30 border-white/10 bg-white/5',
   'Never Recorded': 'text-red-400/50 border-red-500/10 bg-red-500/5',
 };
 
@@ -390,7 +393,7 @@ function VideoRow({ entry, miniPlayerMode, activeMiniEntry, onOpenMiniPlayer }: 
   const [activeLink, setActiveLink] = useState(0);
 
   const isUnavailable = !entry.links.length;
-  const availColor = AVAILABLE_LENGTH_COLORS[entry.availableLength] || 'text-white/40 border-white/10 bg-white/5';
+  const availColor = AVAILABILITY_COLORS[entry.availability] || 'text-white/40 border-white/10 bg-white/5';
   const isStarred = entry.name.startsWith('⭐');
   const isInMiniPlayer = miniPlayerMode && activeMiniEntry === entry;
 
@@ -445,14 +448,14 @@ function VideoRow({ entry, miniPlayerMode, activeMiniEntry, onOpenMiniPlayer }: 
         </div>
 
         <div className="shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
-          {entry.availableLength && (
+          {entry.availability && entry.availability !== 'N/A' && (
             <span className={`text-[10px] px-2 py-0.5 rounded border font-medium ${availColor}`}>
-              {entry.availableLength}
+              {entry.availability}
             </span>
           )}
-          {entry.quality && (
+          {entry.status && entry.status !== 'Officially Released' && (
             <span className="text-[10px] px-2 py-0.5 rounded border border-white/10 text-white/50 bg-white/5">
-              {entry.quality}
+              {entry.status}
             </span>
           )}
           {entry.links.length > 0 && !expanded && !miniPlayerMode && (
@@ -521,8 +524,11 @@ function VideoRow({ entry, miniPlayerMode, activeMiniEntry, onOpenMiniPlayer }: 
                 </div>
               )}
 
-              {entry.dateMade && (
-                <p className="text-[10px] text-white/30">Filmed: {entry.dateMade}</p>
+              {entry.releaseDate && (
+                <p className="text-[10px] text-white/30">Released: {entry.releaseDate}</p>
+              )}
+              {entry.shootDate && entry.shootDate !== 'N/A' && (
+                <p className="text-[10px] text-white/30">Filmed: {entry.shootDate}</p>
               )}
             </div>
           </motion.div>
