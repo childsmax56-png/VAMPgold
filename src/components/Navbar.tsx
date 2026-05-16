@@ -87,7 +87,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
               src="/logo.png"
               alt="YZY Gold"
               onClick={onHomeClick}
-              className="h-[64px] w-[210px] object-cover object-center cursor-pointer hover:opacity-80 transition-opacity duration-300"
+              className="h-[48px] w-[160px] object-cover object-center cursor-pointer hover:opacity-80 transition-opacity duration-300"
             />
           </div>
 
@@ -128,7 +128,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
                 )}
               </div>
               {/* desktop logo fills the gap between search and center */}
-              <div className="hidden md:block w-[220px] h-[80px] shrink-0 overflow-hidden">
+              <div className="hidden md:block w-[170px] h-[60px] shrink-0 overflow-hidden">
                 <img
                   src="/logo.png"
                   alt="YZY Gold"
