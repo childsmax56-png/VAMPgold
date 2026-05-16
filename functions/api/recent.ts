@@ -10,5 +10,14 @@ export const onRequestGet: PagesFunction = async (context) => {
   const text = await res.text();
   const rows = parseCSV(text);
 
-  return csvResponse(rows);
+  // Normalize multi-line column headers to their first line
+  const normalized = rows.map(row => {
+    const out: Record<string, any> = {};
+    for (const [key, val] of Object.entries(row)) {
+      out[key.split('\n')[0].trim()] = val;
+    }
+    return out;
+  });
+
+  return csvResponse(normalized);
 };

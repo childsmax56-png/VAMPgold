@@ -140,8 +140,8 @@ export function useLyrics(currentSong: Song | null, era: Era | null) {
         trackNamesToTry = ["Alright"];
       } else {
         const lowerArtist = initialArtist.toLowerCase();
-        if (!lowerArtist.includes('kanye west') && !lowerArtist.includes('ye')) {
-          artistsToTry.push('Kanye West', 'Ye');
+        if (!lowerArtist.includes('playboi carti') && !lowerArtist.includes('carti')) {
+          artistsToTry.push('Playboi Carti');
         }
       }
 

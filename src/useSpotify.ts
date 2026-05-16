@@ -96,7 +96,7 @@ export function useSpotify(enabled: boolean): { state: SpotifyState; controls: S
       if (!token) return;
 
       const player = new window.Spotify.Player({
-        name: 'YZYGOLD',
+        name: 'VAMPGOLD',
         getOAuthToken: async (cb) => {
           const t = await getSpotifyToken();
           if (t) cb(t);

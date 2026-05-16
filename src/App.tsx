@@ -23,13 +23,7 @@ import { useSpotify, SpotifyTrack } from './useSpotify';
 import { useYoutube } from './useYoutube';
 import { useSoundCloud } from './useSoundCloud';
 
-const CUSTOM_ALBUM_INFO: Record<string, string[]> = {
-  "The College Dropout": ["1 OG File(s)", "49 Full", "9 Tagged", "2 Partial", "7 Snippet(s)", "0 Stem Bounce(s)", "46 Unavailable"],
-  "The Life Of Pablo": ["51 OG File(s)", "23 Full", "3 Tagged", "7 Partial", "19 Snippet(s)", "2 Stem Bounce(s)", "35 Unavailable"],
-  "Turbo Grafx 16": ["20 OG File(s)", "11 Full", "0 Tagged", "0 Partial", "6 Snippet(s)", "2 Stem Bounce(s)", "50 Unavailable"],
-  "The Elementary School Dropout": ["0 OG File(s)", "0 Full", "0 Tagged", "0 Partial", "3 Snippet(s)", "0 Stem Bounce(s)", "15 Unavailable"],
-  "Wolves": ["1 OG File(s)", "8 Full", "0 Tagged", "1 Partial", "0 Snippet(s)", "0 Stem Bounce(s)", "8 Unavailable"],
-};
+const CUSTOM_ALBUM_INFO: Record<string, string[]> = {};
 
 export interface MvEntry {
   Era: string;
@@ -83,23 +77,7 @@ import { ChatBubble } from './components/ChatBubble';
 import { useSettings, LOADING_SCREENS } from './SettingsContext';
 import { recordListeningHistory } from './history';
 
-const ERA_MAPPINGS: Record<string, string> = {
-  "TurboGrafx 16": "Turbo Grafx 16",
-  "TurboGrafx16": "Turbo Grafx 16",
-  "TurboGrafx-16": "Turbo Grafx 16",
-  "TurboGrafix 16": "Turbo Grafx 16",
-  "Turbo Grafx 16": "Turbo Grafx 16",
-  "Turbo Grafx-16": "Turbo Grafx 16",
-  "Turbo Grafix 16": "Turbo Grafx 16",
-  "Turbo Grafix-16": "Turbo Grafx 16",
-  "Donda [V1]": "DONDA [V1]",
-  "KIDSSEEGHOSTS": "KIDS SEE GHOSTS",
-  "Kids See Ghosts": "KIDS SEE GHOSTS",
-  "KIDS SEE GHOSTS": "KIDS SEE GHOSTS",
-  "KIDS SEE GHOST": "KIDS SEE GHOSTS",
-  "Bully": "BULLY [V1]",
-  "BULLY": "BULLY [V1]"
-};
+const ERA_MAPPINGS: Record<string, string> = {};
 
 export default function App() {
   const { settings } = useSettings();
@@ -215,7 +193,7 @@ export default function App() {
 
   const [favoriteKeys, setFavoriteKeys] = useState<{ songName: string, eraName: string, url: string, song?: Song }[]>(() => {
     if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('yzygold_favorite_keys');
+      const saved = localStorage.getItem('vampgold_favorite_keys');
       if (saved) {
         try {
           return JSON.parse(saved);
@@ -229,7 +207,7 @@ export default function App() {
 
   useEffect(() => {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('yzygold_favorite_keys', JSON.stringify(favoriteKeys));
+      localStorage.setItem('vampgold_favorite_keys', JSON.stringify(favoriteKeys));
     }
   }, [favoriteKeys]);
 
@@ -264,7 +242,7 @@ export default function App() {
     }
     if (typeof localStorage !== 'undefined') {
       try {
-        const saved = localStorage.getItem('yzygold_playback_state');
+        const saved = localStorage.getItem('vampgold_playback_state');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (typeof parsed.volume === 'number' && parsed.volume >= 0 && parsed.volume <= 1) {
@@ -301,7 +279,7 @@ export default function App() {
         volume: volume,
         currentTime: currentTime
       };
-      localStorage.setItem('yzygold_playback_state', JSON.stringify(stateToSave));
+      localStorage.setItem('vampgold_playback_state', JSON.stringify(stateToSave));
     }
   }, [currentSong, currentEra, volume, currentTime]);
 
@@ -309,7 +287,7 @@ export default function App() {
     if (data && recentData.length > 0 && !initialLoadRef.current) {
       initialLoadRef.current = true;
       if (typeof localStorage !== 'undefined') {
-        const saved = localStorage.getItem('yzygold_playback_state');
+        const saved = localStorage.getItem('vampgold_playback_state');
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
@@ -346,7 +324,7 @@ export default function App() {
                   handlePlaySong(songToRestore as Song, eraToRestore as Era, undefined, false, false);
                 }
               } else if (savedEraName === 'Favorites') {
-                const savedFavs = localStorage.getItem('yzygold_favorite_keys');
+                const savedFavs = localStorage.getItem('vampgold_favorite_keys');
                 if (savedFavs) {
                    const favKeys = JSON.parse(savedFavs);
                    const favEra = {
@@ -605,10 +583,7 @@ export default function App() {
     const FETCH_TIMEOUT = 20000;
     Promise.all([
       axios.get('/api/a', { timeout: FETCH_TIMEOUT }),
-      axios.get('https://yzygold-test.vercel.app/MyK.json', { timeout: FETCH_TIMEOUT }).catch(err => {
-        console.error("Failed to fetch MyK data", err);
-        return { data: [] };
-      }),
+      Promise.resolve({ data: [] }),
       axios.get('/local-songs.json', { timeout: FETCH_TIMEOUT }).catch(err => {
         console.error("Failed to fetch local songs", err);
         return { data: [] };
@@ -760,28 +735,6 @@ export default function App() {
           setData(nextJson);
         } else {
           const baseJson = JSON.parse(JSON.stringify(json));
-          if (!baseJson.eras["Ongoing"]) {
-            baseJson.eras["Ongoing"] = {
-              name: "Ongoing",
-              image: "https://i.ibb.co/dwZ4cwmd/image-2026-04-27-185921217.png",
-              extra: "",
-              data: { "Unreleased Tracks": [] }
-            };
-          }
-          if (!baseJson.eras["Jesus Is Born"]) {
-            baseJson.eras["Jesus Is Born"] = {
-              name: "Jesus Is Born",
-              extra: "Sunday Service Choir",
-              data: { "Released Tracks": [] }
-            };
-          }
-          if (!baseJson.eras["Sunday Service Choir"]) {
-            baseJson.eras["Sunday Service Choir"] = {
-              name: "Sunday Service Choir",
-              extra: "Yandhi / JESUS IS KING / God's Country / DONDA",
-              data: { "Featured": [] }
-            };
-          }
           applyLocalSongs(baseJson, localRes.data);
           applyTrackerSheetSongs(baseJson, sheetsRes.data);
           setData(baseJson);
@@ -942,7 +895,7 @@ export default function App() {
       });
     };
 
-    axios.get('https://yzygold-test.vercel.app/MV.json')
+    axios.get('/api/music-videos')
       .then(res => {
         setMvData(normalizeEraField(res.data) as MvEntry[]);
       })
@@ -958,7 +911,7 @@ export default function App() {
         console.error("Failed to fetch music videos data:", err);
       });
 
-    axios.get('https://yzygold-test.vercel.app/Remixes.json')
+    Promise.resolve({ data: [] })
       .then(res => {
         setRemixData(normalizeEraField(res.data) as RemixEntry[]);
       })
@@ -979,7 +932,7 @@ export default function App() {
         console.error("Failed to fetch Art data:", err);
       });
 
-    axios.get('https://yzygold-test.vercel.app/Stems.json')
+    Promise.resolve({ data: [] })
       .then(res => {
         setStemsData(normalizeEraField(res.data) as StemEntry[]);
       })
@@ -1003,7 +956,7 @@ export default function App() {
         console.error("Failed to fetch Released data:", err);
       });
 
-    axios.get('https://yzygold-test.vercel.app/Fakes.json')
+    Promise.resolve({ data: [] })
       .then(res => {
         const rawFakes = normalizeEraField(res.data) as any[];
         const mappedFakes = rawFakes.map(item => {
@@ -1039,7 +992,7 @@ export default function App() {
         console.error("Failed to fetch Fakes data:", err);
       });
 
-    axios.get('https://yzygold-test.vercel.app/Samples.json')
+    Promise.resolve({ data: [] })
       .then(res => {
         setSamplesData(res.data as SampleEntry[]);
       })
@@ -2433,10 +2386,10 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
 
           <div className="mt-auto px-6 py-8 text-center border-t border-white/5">
             <p className="text-[10px] text-white/30 leading-relaxed">
-              YƵYGOLD does not host or hold any illegal files. All links are external and provided as-is for educational and archival purposes only.
+              VAMPGOLD does not host or hold any illegal files. All links are external and provided as-is for educational and archival purposes only.
             </p>
             <p className="text-[10px] text-white/30 leading-relaxed">
-              YZYGOLD 2026 © [V1.8.5]
+              VAMPGOLD 2026 ©
             </p>
             <p className="text-[10px] text-white/30 leading-relaxed mt-1">
               Logo created by Nr7th on discord

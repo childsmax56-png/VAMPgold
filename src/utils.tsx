@@ -14,7 +14,7 @@ export const TAG_TOOLTIP_MAP: Record<string, string> = {
   'Unwanted': 'Songs that we don\'t want to leak in full because they\'re shit',
   'AI': 'Track contains AI vocals.',
   'Lost Media': 'Is currently lost, or we don\'t have a link to the media.',
-  'By YƵYGOLD': 'Leaks & Songs that added by the owner of the site.'
+  'By VAMPGOLD': 'Leaks & Songs that added by the owner of the site.'
 };
 
 export const CUSTOM_IMAGES: Record<string, string> = {
@@ -135,7 +135,7 @@ export const ALBUM_RELEASE_DATES: Record<string, string> = {
   "IN A PERFECT WORLD": "06/22/2025"
 };
 
-export const HIDDEN_ALBUMS = ['NASIR', 'K.T.S.E.', 'NEVER STOP', 'DAYTONA', 'The Elementary School Dropout', 'Jesus Is Born', 'Sunday Service Choir'];
+export const HIDDEN_ALBUMS: string[] = [];
 
 export const ALBUM_DESCRIPTIONS: Record<string, string> = {
   "DAYTONA": "DAYTONA is the third studio album by American rapper Pusha T. It was released on May 25, 2018, by G.O.O.D. Music and Def Jam Recordings. DAYTONA was announced by Kanye West via Twitter on April 19, 2018, alongside the album's release date. It was one of the Wyoming projects worked on during 2018 by Kanye.",
@@ -241,16 +241,8 @@ export function getSongSlug(song: any, allSongsInCollection: any[]): string {
   return createSlug(song.name) || 'NoName1';
 }
 
-export function getArtistName(eraName: string | undefined): string {
-  if (!eraName) return "Kanye West";
-  const albumNames = Object.keys(ALBUM_RELEASE_DATES);
-  const donda3Index = albumNames.indexOf("Donda [V3]");
-  const eraIndex = albumNames.indexOf(eraName);
-
-  if (donda3Index !== -1 && eraIndex !== -1 && eraIndex > donda3Index) {
-    return "YE";
-  }
-  return "Kanye West";
+export function getArtistName(_eraName: string | undefined): string {
+  return "Playboi Carti";
 }
 
 export function buildArtistTag(songName: string, eraName: string | undefined): string {

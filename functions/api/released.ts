@@ -1,6 +1,10 @@
 import { parseCSV, csvResponse } from './_csvParser';
 
-const VALID_TYPES = new Set(['Feature', 'Production', 'Single', 'Album Track', 'Other']);
+const VALID_TYPES = new Set([
+  'Single', 'Feature', 'Album Track', 'Mixtape', 'Freestyle',
+  'Throwaway', 'Music Video', 'OG', 'OG File', 'Live', 'Production',
+  'Other', 'EP', 'Tour Intro',
+]);
 
 export const onRequestGet: PagesFunction = async (context) => {
   const url = new URL(context.request.url);

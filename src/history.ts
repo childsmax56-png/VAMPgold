@@ -12,7 +12,7 @@ export interface HistoryEntry {
 export function getListeningHistory(): HistoryEntry[] {
   if (typeof localStorage === 'undefined') return [];
   try {
-    const saved = localStorage.getItem('yzygold_listening_history');
+    const saved = localStorage.getItem('vampgold_listening_history');
     if (saved) {
       return JSON.parse(saved);
     }
@@ -27,7 +27,7 @@ export function removeHistoryEntry(songName: string, eraName: string) {
   try {
     const history = getListeningHistory();
     const updatedHistory = history.filter(e => !(e.songName === songName && e.eraName === eraName));
-    localStorage.setItem('yzygold_listening_history', JSON.stringify(updatedHistory));
+    localStorage.setItem('vampgold_listening_history', JSON.stringify(updatedHistory));
     return updatedHistory;
   } catch (e) {
     console.error('Failed to remove listening history entry', e);
@@ -64,7 +64,7 @@ export function recordListeningHistory(song: Song, era: Era, artist: string, alb
       return b.lastPlayed - a.lastPlayed;
     });
     
-    localStorage.setItem('yzygold_listening_history', JSON.stringify(history));
+    localStorage.setItem('vampgold_listening_history', JSON.stringify(history));
   } catch (e) {
     console.error('Failed to save listening history', e);
   }
@@ -72,5 +72,5 @@ export function recordListeningHistory(song: Song, era: Era, artist: string, alb
 
 export function clearListeningHistory() {
   if (typeof localStorage === 'undefined') return;
-  localStorage.removeItem('yzygold_listening_history');
+  localStorage.removeItem('vampgold_listening_history');
 }
