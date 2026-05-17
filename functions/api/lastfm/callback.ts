@@ -21,5 +21,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       302
     );
   }
-  return new Response(`Failed to get session: ${JSON.stringify(data)} | api_sig=${api_sig} token_prefix=${token.slice(0,8)}`, { status: 400 });
+  const keys = Object.keys(params).sort();
+  const sigStr = keys.map((k) => k + (params as any)[k]).join('');
+  return new Response(`Failed | lfm=${JSON.stringify(data)} | sig_str=${sigStr}[SECRET] | api_sig=${api_sig}`, { status: 400 });
 };
