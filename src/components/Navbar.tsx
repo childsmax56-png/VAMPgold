@@ -84,12 +84,12 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
     <header className="h-auto md:h-16 w-full glass-panel border-b border-white/5 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-3 md:py-0 z-30 relative shrink-0 gap-3 md:gap-0">
       <div className="flex flex-col w-full md:flex-1">
         <div className="flex-1 flex flex-row items-center justify-between md:justify-start w-full relative gap-3">
-          <div className="md:hidden flex-1 min-w-0 overflow-hidden">
+          <div className="md:hidden flex items-center shrink-0">
             <img
               src="/logo.png"
               alt="YZY Gold"
               onClick={onHomeClick}
-              className="h-[44px] w-full object-contain object-left cursor-pointer hover:opacity-80 transition-opacity duration-300"
+              className="h-[48px] w-[160px] object-cover object-center cursor-pointer hover:opacity-80 transition-opacity duration-300"
             />
           </div>
 
@@ -130,12 +130,12 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
                 )}
               </div>
               {/* desktop logo fills the gap between search and center */}
-              <div className="hidden md:block flex-1 h-[64px] overflow-hidden">
+              <div className="hidden md:block w-[170px] h-[60px] shrink-0 overflow-hidden">
                 <img
                   src="/logo.png"
                   alt="VAMP Gold"
                   onClick={onHomeClick}
-                  className="w-full h-full object-cover object-center cursor-pointer hover:opacity-80 transition-opacity duration-300"
+                  className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-300"
                 />
               </div>
             </div>
