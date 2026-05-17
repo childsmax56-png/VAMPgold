@@ -996,6 +996,14 @@ export default function App() {
       window.history.replaceState({}, '', window.location.pathname);
     }
 
+    const handleLastfmMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'lastfm-auth' && e.data.session && e.data.user) {
+        saveLastfmSession(e.data.session, e.data.user);
+        setLastfmLoggedIn(true);
+      }
+    };
+    window.addEventListener('message', handleLastfmMessage);
+
     const handleLastfmApiError = () => {
       setShowLastfmErrorModal(true);
       clearLastfmSession();
@@ -1004,6 +1012,7 @@ export default function App() {
 
     window.addEventListener('lastfm-api-error', handleLastfmApiError);
     return () => {
+      window.removeEventListener('message', handleLastfmMessage);
       window.removeEventListener('lastfm-api-error', handleLastfmApiError);
     };
   }, []);
