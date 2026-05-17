@@ -95,7 +95,7 @@ export const CUSTOM_IMAGES: Record<string, string> = {
   "WE DON'T DIAL 911": "https://i.ibb.co/ksjjq3vj/IMG-0674.jpg",
   "Whole Lotta Red [V2]": "https://i.ibb.co/Qjb9bD1V/IMG-0675.jpg",
   "Whole Lotta Red [V3]": "https://i.ibb.co/0pLvdrrd/IMG-0676.png",
-  "Whole Lotta Red (Deluxe)": "https://i.ibb.co/0pLvdrrd/IMG-0676.png",
+  "Whole Lotta Red (Deluxe)": "https://i.imgur.com/U2x2OPH.png",
   "Whole Lotta Red [V4]": "https://i.ibb.co/BWs9m6z/IMG-0677.jpg",
   "Narcissist": "https://i.ibb.co/HL4LmCsJ/IMG-4068.png",
   "MUSIC [V1]": "https://i.ibb.co/PZDxHz50/484456766-1062141895957335-7903129463974570707-n.jpg",
