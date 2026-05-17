@@ -89,7 +89,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
               src="/logo.png"
               alt="YZY Gold"
               onClick={onHomeClick}
-              className="h-[48px] w-[160px] object-cover object-center cursor-pointer hover:opacity-80 transition-opacity duration-300"
+              className="h-[48px] w-[160px] object-contain object-left cursor-pointer hover:opacity-80 transition-opacity duration-300"
             />
           </div>
 
@@ -135,7 +135,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
                   src="/logo.png"
                   alt="VAMP Gold"
                   onClick={onHomeClick}
-                  className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-300"
+                  className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity duration-300"
                 />
               </div>
             </div>
