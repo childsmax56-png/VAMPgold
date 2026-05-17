@@ -20,6 +20,8 @@ interface ChatBubbleProps {
   data: TrackerData | null;
   screenContext: ScreenContext;
   showPlayer: boolean;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
 }
 
 function cleanSongName(name: string): string {
@@ -94,9 +96,9 @@ function renderMessage(text: string) {
   });
 }
 
-export function ChatBubble({ data, screenContext, showPlayer }: ChatBubbleProps) {
+export function ChatBubble({ data, screenContext, showPlayer, open, onOpenChange }: ChatBubbleProps) {
   const { settings } = useSettings();
-  const [open, setOpen] = useState(false);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -182,7 +184,7 @@ export function ChatBubble({ data, screenContext, showPlayer }: ChatBubbleProps)
                 <p className="text-white/40 text-[10px]">Ask anything about Ye's music</p>
               </div>
               <button
-                onClick={() => setOpen(false)}
+                onClick={() => onOpenChange(false)}
                 className="text-white/40 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -240,25 +242,6 @@ export function ChatBubble({ data, screenContext, showPlayer }: ChatBubbleProps)
           </motion.div>
         )}
       </AnimatePresence>
-
-      <motion.button
-        onClick={() => setOpen(v => !v)}
-        className={`fixed right-6 ${bottomOffset} z-[9000] w-12 h-12 rounded-full bg-[var(--theme-color)] text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer`}
-        title="Ask AI about music"
-        whileTap={{ scale: 0.92 }}
-      >
-        <AnimatePresence mode="wait">
-          {open ? (
-            <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-              <X className="w-5 h-5" />
-            </motion.span>
-          ) : (
-            <motion.span key="msg" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-              <MessageCircle className="w-5 h-5" />
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </motion.button>
     </>
   );
 }

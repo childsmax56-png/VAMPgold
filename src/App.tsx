@@ -366,6 +366,7 @@ export default function App() {
   }, [data, recentData]);
 
   const [lastfmLoggedIn, setLastfmLoggedIn] = useState(isLastfmLoggedIn());
+  const [yeiOpen, setYeiOpen] = useState(false);
   const [spotifyLoggedIn, setSpotifyLoggedIn] = useState(isSpotifyLoggedIn());
   const [activePlayer, setActivePlayer] = useState<'audio' | 'spotify' | 'youtube' | 'soundcloud'>('audio');
   const { state: spotifyState, controls: spotifyControls } = useSpotify(spotifyLoggedIn);
@@ -2170,6 +2171,8 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
           spotifyLoggedIn={spotifyLoggedIn}
           onSpotifyLogin={startSpotifyAuth}
           onSpotifyLogout={() => { clearSpotifySession(); setSpotifyLoggedIn(false); setActivePlayer('audio'); }}
+          yeiOpen={yeiOpen}
+          onYEIClick={() => setYeiOpen(o => !o)}
         />
 
         <main className={`flex-1 overflow-y-auto relative scroll-smooth bg-[#0a0a0a] flex flex-col ${showPlayer ? 'pb-44 md:pb-28' : ''}`}>
@@ -2672,6 +2675,8 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
           currentEraName: currentEra?.name,
         }}
         showPlayer={showPlayer}
+        open={yeiOpen}
+        onOpenChange={setYeiOpen}
       />
     </div>
   );
