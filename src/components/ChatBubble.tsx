@@ -180,8 +180,8 @@ export function ChatBubble({ data, screenContext, showPlayer, open, onOpenChange
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#181818]">
               <div>
-                <p className="text-white text-sm font-semibold leading-tight">YZYGOLD Assistant</p>
-                <p className="text-white/40 text-[10px]">Ask anything about Ye's music</p>
+                <p className="text-white text-sm font-semibold leading-tight">VAMPGOLD Assistant</p>
+                <p className="text-white/40 text-[10px]">Ask anything about Carti's music</p>
               </div>
               <button
                 onClick={() => onOpenChange(false)}
@@ -194,7 +194,7 @@ export function ChatBubble({ data, screenContext, showPlayer, open, onOpenChange
             <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0">
               {messages.length === 0 && (
                 <div className="text-white/30 text-xs text-center py-6 leading-relaxed">
-                  Ask about any Ye song, era, leak, or quality rating.
+                  Ask about any Carti song, era, leak, or quality rating.
                 </div>
               )}
               {messages.map((msg, i) => (
