@@ -2002,6 +2002,11 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
            const eName = song.extra2 || song.extra;
            return eName !== 'NASIR' && eName !== 'K.T.S.E.' && eName !== 'NEVER STOP' && eName !== 'DAYTONA' && eName !== 'The Elementary School Dropout';
         })
+        .sort((a, b) => {
+          const da = a.leak_date ? new Date(a.leak_date).getTime() : 0;
+          const db = b.leak_date ? new Date(b.leak_date).getTime() : 0;
+          return db - da;
+        })
         .map(song => {
           const rawEraName = song.extra2 || song.extra;
           const cleanEraName = rawEraName ? getCleanSongNameWithTags(rawEraName) : '';
