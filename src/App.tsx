@@ -568,8 +568,8 @@ export default function App() {
     });
   }
 
-  const HARDCODED_SHEET_ID = '12nGHPPh5dVTfLuBLVQYzC3QgPxKfvp-jgCoNccvEasM';
-  const HARDCODED_SHEET_GID = '1385926980'; // Recent tab
+  const HARDCODED_SHEET_ID = '1Irtfvymu26CShYowLMMfD-rM0o9CJqE6-BBSlYsAaF4';
+  const HARDCODED_SHEET_GID = '0'; // Recent tab
 
   useEffect(() => {
     const sheetCsvUrl = getSheetCsvExportUrl(
