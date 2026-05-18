@@ -209,7 +209,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
               <SiSpotify className="w-5 h-5" />
             </button>
             <a
-              href="https://discord.gg/TYqdey3B"
+              href="https://discord.gg/xYhKgCDX8h"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center p-2.5 rounded-full transition-all duration-300 cursor-pointer"
@@ -326,7 +326,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
           </span>
         </button>
         <a
-          href="https://discord.gg/TYqdey3B"
+          href="https://discord.gg/xYhKgCDX8h"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 cursor-pointer hover:scale-105"
