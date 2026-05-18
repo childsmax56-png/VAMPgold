@@ -1,4 +1,4 @@
-const CLIENT_ID = '6b2d5d51cfe84fe1ac1c88bd1275e72e';
+const CLIENT_ID = 'c9bdd79bf657487d8973f4c1510523ea';
 const REDIRECT_URI = 'https://yzyarchives.org/';
 const SCOPES = [
   'streaming',
