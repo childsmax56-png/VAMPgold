@@ -1,5 +1,7 @@
 const CLIENT_ID = 'c9bdd79bf657487d8973f4c1510523ea';
-const REDIRECT_URI = 'https://yzyarchives.org/';
+const HUB_REDIRECT_URI = 'https://vaultgold.net/';
+const IS_LOCAL = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const REDIRECT_URI = IS_LOCAL ? `${window.location.origin}/` : HUB_REDIRECT_URI;
 const SCOPES = [
   'streaming',
   'user-read-email',
@@ -28,10 +30,17 @@ function randomString(length: number): string {
 export async function startSpotifyAuth(): Promise<void> {
   const codeVerifier = randomString(64);
   const codeChallenge = base64URLEncode(await sha256(codeVerifier));
-  const state = randomString(16);
+  const randomState = randomString(16);
 
-  localStorage.setItem('spotify_code_verifier', codeVerifier);
-  localStorage.setItem('spotify_state', state);
+  let state: string;
+  if (IS_LOCAL) {
+    localStorage.setItem('spotify_code_verifier', codeVerifier);
+    localStorage.setItem('spotify_state', randomState);
+    state = randomState;
+  } else {
+    // Encode verifier + return origin so VAULTgold can relay tokens back
+    state = btoa(JSON.stringify({ s: randomState, v: codeVerifier, r: window.location.origin }));
+  }
 
   const params = new URLSearchParams({
     response_type: 'code',
@@ -48,6 +57,22 @@ export async function startSpotifyAuth(): Promise<void> {
 }
 
 export async function handleSpotifyCallback(): Promise<boolean> {
+  // Case 1: tokens relayed back from VAULTgold hub via URL hash
+  if (window.location.hash) {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = hash.get('spotify_access_token');
+    const refreshToken = hash.get('spotify_refresh_token');
+    const expiresIn = hash.get('spotify_expires_in');
+    if (accessToken && expiresIn) {
+      localStorage.setItem('spotify_access_token', accessToken);
+      if (refreshToken) localStorage.setItem('spotify_refresh_token', refreshToken);
+      localStorage.setItem('spotify_expires_at', String(Date.now() + parseInt(expiresIn) * 1000));
+      window.history.replaceState({}, '', window.location.pathname);
+      return true;
+    }
+  }
+
+  // Case 2: direct local PKCE flow
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
   const state = params.get('state');
