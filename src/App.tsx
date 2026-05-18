@@ -386,7 +386,7 @@ export default function App() {
   }, [volume]);
 
   useEffect(() => {
-    if (window.location.search.includes('code=')) {
+    if (window.location.search.includes('code=') || window.location.hash.includes('spotify_access_token=')) {
       handleSpotifyCallback().then(ok => {
         if (ok) setSpotifyLoggedIn(true);
       });
