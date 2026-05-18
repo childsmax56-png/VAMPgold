@@ -2541,30 +2541,18 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
               exit={{ scale: 0.95, y: 20 }}
               className="bg-[#111] border border-white/10 rounded-xl max-w-lg w-full p-6 md:p-8"
             >
-              <h2 className="text-2xl font-bold text-white mb-1 tracking-tight font-display">
-                Version 1.8.5
+              <h2 className="text-2xl font-bold text-white mb-4 tracking-tight font-display uppercase">
+                WELCOME TO VAMPGOLD
               </h2>
-              <p className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-6">What's New</p>
 
               <div className="space-y-4 mb-8 text-sm text-white/70 leading-relaxed">
-                <ul className="space-y-4">
-                  <li>
-                    <strong className="text-white">Thank you to Nr7th on discord for creating the new YZYgold logo, YOU DID A GREAT JOB</strong>
-                  </li>
-                </ul>
-
-                <div className="border-t border-white/10 pt-4 space-y-2 text-white/50 text-xs">
-                  <p>
-                    <a href="https://docs.google.com/document/d/1b8aidNuSLLHfzgzrJ0uGdWHPuo-uNk6wI21Vscwzid4/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-color)] hover:underline">
-                      Full changelog here
-                    </a>
-                  </p>
-                  <p>
-                    <a href="https://discord.gg/TYqdey3B" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-color)] hover:underline">
-                      Join the Discord here
-                    </a>
-                  </p>
-                </div>
+                <p>View and download pretty much everything related to Playboi Carti</p>
+                <p>
+                  report any bugs to{' '}
+                  <a href="https://discord.gg/xYhKgCDX8h" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-color)] hover:underline">
+                    Discord
+                  </a>
+                </p>
               </div>
 
               <button
