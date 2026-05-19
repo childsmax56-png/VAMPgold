@@ -168,7 +168,11 @@ export const ALBUM_RELEASE_DATES: Record<string, string> = {
   "IN A PERFECT WORLD": "06/22/2025"
 };
 
-export const HIDDEN_ALBUMS: string[] = [];
+export const HIDDEN_ALBUMS: string[] = [
+  "CARTI YE",
+  "Ye - DONDA",
+  "VULTURES",
+];
 
 export const ALBUM_DESCRIPTIONS: Record<string, string> = {
   "DAYTONA": "DAYTONA is the third studio album by American rapper Pusha T. It was released on May 25, 2018, by G.O.O.D. Music and Def Jam Recordings. DAYTONA was announced by Kanye West via Twitter on April 19, 2018, alongside the album's release date. It was one of the Wyoming projects worked on during 2018 by Kanye.",
