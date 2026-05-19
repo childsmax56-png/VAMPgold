@@ -376,7 +376,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
           title="VAULTgold"
         >
           <DollarSign className="w-4 h-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Vault</span>
+          <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Other Artist Trackers</span>
         </a>
         <button
           onClick={handleLastfmClick}
