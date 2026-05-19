@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, DollarSign, LogIn, LogOut, Settings, Dice5, X, ChevronDown, MessageCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { SiLastdotfm, SiSpotify, SiDiscord, SiReddit } from 'react-icons/si';
+import { SiLastdotfm, SiSpotify, SiDiscord, SiReddit, SiTiktok } from 'react-icons/si';
 import { FilterMenu } from './FilterMenu';
 import { SearchFilters } from '../types';
 import { isLastfmLoggedIn, getLastfmUsername, clearLastfmSession, startLastfmAuth } from '../lastfm';
@@ -229,6 +229,16 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
               <SiReddit className="w-5 h-5" />
             </a>
             <a
+              href="https://www.tiktok.com/t/ZTBerQPF2/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center p-2.5 rounded-full transition-all duration-300 cursor-pointer"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#ffffff' }}
+              title="TikTok"
+            >
+              <SiTiktok className="w-5 h-5" />
+            </a>
+            <a
               href="https://vaultgold.net/"
               target="_blank"
               rel="noopener noreferrer"
@@ -366,6 +376,17 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
         >
           <SiReddit className="w-4 h-4" />
           <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Reddit</span>
+        </a>
+        <a
+          href="https://www.tiktok.com/t/ZTBerQPF2/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 cursor-pointer hover:scale-105"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)', color: '#ffffff' }}
+          title="TikTok"
+        >
+          <SiTiktok className="w-4 h-4" />
+          <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">TikTok</span>
         </a>
         <a
           href="https://vaultgold.net/"
