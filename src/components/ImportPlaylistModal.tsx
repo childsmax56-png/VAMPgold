@@ -2,6 +2,7 @@ import { usePlaylists } from '../PlaylistContext';
 
 interface PendingImport {
   name: string;
+  cover?: string;
   songs: { songName: string; eraName: string; url: string }[];
 }
 
@@ -12,13 +13,14 @@ interface Props {
 }
 
 export function ImportPlaylistModal({ pending, onDone, onNavigatePlaylists }: Props) {
-  const { createPlaylist, addToPlaylist } = usePlaylists();
+  const { createPlaylist, addToPlaylist, setCover } = usePlaylists();
 
   const handleImport = () => {
     const id = createPlaylist(pending.name);
     for (const s of pending.songs) {
       addToPlaylist(id, s);
     }
+    if (pending.cover) setCover(id, pending.cover);
     onDone();
     onNavigatePlaylists();
   };

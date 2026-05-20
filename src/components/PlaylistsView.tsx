@@ -64,7 +64,7 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
   };
 
   const sharePlaylist = (playlist: ReturnType<typeof usePlaylists>['playlists'][0]) => {
-    const data = { name: playlist.name, songs: playlist.songs.map(s => ({ songName: s.songName, eraName: s.eraName, url: s.url })) };
+    const data = { name: playlist.name, cover: playlist.cover, songs: playlist.songs.map(s => ({ songName: s.songName, eraName: s.eraName, url: s.url })) };
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
     const url = `${window.location.origin}${window.location.pathname}?playlist=${encodeURIComponent(encoded)}`;
     navigator.clipboard.writeText(url).then(() => onToast?.('Playlist link copied!')).catch(() => onToast?.('Failed to copy link'));

@@ -108,7 +108,7 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const [pendingImport, setPendingImport] = useState<{ name: string; songs: { songName: string; eraName: string; url: string }[] } | null>(() => {
+  const [pendingImport, setPendingImport] = useState<{ name: string; cover?: string; songs: { songName: string; eraName: string; url: string }[] } | null>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const raw = params.get('playlist');
