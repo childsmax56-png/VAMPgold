@@ -10,6 +10,7 @@ import { useSettings } from '../SettingsContext';
 import { isLastfmLoggedIn } from '../lastfm';
 import { SiLastdotfm } from 'react-icons/si';
 import { MvEntry, RemixEntry, SampleEntry } from '../App';
+import { AddToPlaylistButton } from './AddToPlaylistButton';
 
 function normalizeName(name: string): string {
   return name
@@ -700,6 +701,19 @@ export function EraDetail({ era, onBack, onPlaySong, searchQuery = '', filters, 
                               >
                                 <Star className="w-3.5 h-3.5" fill={isStarred ? "currentColor" : "none"} />
                               </button>
+                            );
+                          })()}
+                          {(() => {
+                            if (!isPlayable) return null;
+                            const songUrl = song.url || (song.urls && song.urls.length > 0 ? song.urls[0] : '');
+                            const eraNameForPlaylist = (song as any).realEra?.name || era.name;
+                            return (
+                              <AddToPlaylistButton
+                                song={song}
+                                eraName={eraNameForPlaylist}
+                                url={songUrl}
+                                isCurrentlyPlaying={isCurrentlyPlaying}
+                              />
                             );
                           })()}
                           {(() => {

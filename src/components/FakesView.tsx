@@ -5,6 +5,7 @@ import { Era, Song, SearchFilters } from '../types';
 import { useState, useMemo, useEffect } from 'react';
 import { formatTextWithTags, getCleanSongNameWithTags, createSlug, isSongNotAvailable, matchesFilters, CUSTOM_IMAGES } from '../utils';
 import { FakesEntry } from '../App';
+import { AddToPlaylistButton } from './AddToPlaylistButton';
 
 interface FakesViewProps {
   eras: Era[];
@@ -379,6 +380,14 @@ export function FakesView({ eras, fakesData, searchQuery, filters, onPlaySong, c
                         </div>
 
                         <div className="w-16 shrink-0 hidden sm:flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {isPlayable && (
+                            <AddToPlaylistButton
+                              song={song}
+                              eraName={song.extra || 'Fakes'}
+                              url={rawUrl}
+                              isCurrentlyPlaying={!!isCurrentlyPlaying}
+                            />
+                          )}
                         </div>
                      </div>
                   );
