@@ -704,7 +704,7 @@ export function EraDetail({ era, onBack, onPlaySong, searchQuery = '', filters, 
                             );
                           })()}
                           {(() => {
-                            if (!isPlayable) return null;
+                            if (isEmpty) return null;
                             const songUrl = song.url || (song.urls && song.urls.length > 0 ? song.urls[0] : '');
                             const eraNameForPlaylist = (song as any).realEra?.name || era.name;
                             return (
