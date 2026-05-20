@@ -1791,6 +1791,8 @@ export default function App() {
       if (!finalErasArray.find(e => e.name === selectedAlbum.name)) {
         setSelectedAlbum(null);
       }
+    } else {
+      setSelectedAlbum(null);
     }
     setActiveCategory(cat);
   };
