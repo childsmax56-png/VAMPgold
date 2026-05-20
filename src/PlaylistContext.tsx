@@ -11,6 +11,7 @@ interface PlaylistContextValue {
   addToPlaylist: (playlistId: string, entry: PlaylistSong) => void;
   removeFromPlaylist: (playlistId: string, url: string, songName: string) => void;
   moveSong: (playlistId: string, from: number, to: number) => void;
+  setCover: (id: string, cover: string) => void;
 }
 
 const PlaylistContext = createContext<PlaylistContextValue | null>(null);
@@ -57,6 +58,10 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
     ));
   };
 
+  const setCover = (id: string, cover: string) => {
+    setPlaylists(prev => prev.map(p => p.id === id ? { ...p, cover } : p));
+  };
+
   const moveSong = (playlistId: string, from: number, to: number) => {
     setPlaylists(prev => prev.map(p => {
       if (p.id !== playlistId) return p;
@@ -68,7 +73,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <PlaylistContext.Provider value={{ playlists, createPlaylist, renamePlaylist, deletePlaylist, addToPlaylist, removeFromPlaylist, moveSong }}>
+    <PlaylistContext.Provider value={{ playlists, createPlaylist, renamePlaylist, deletePlaylist, addToPlaylist, removeFromPlaylist, moveSong, setCover }}>
       {children}
     </PlaylistContext.Provider>
   );

@@ -105,7 +105,9 @@ async function resolveImgurAlbum(albumId: string): Promise<string | null> {
   return promise;
 }
 
-function ArtImage({ url, alt, contain = false }: { url: string; alt: string; contain?: boolean }) {
+export { resolveImbbUrl };
+
+export function ArtImage({ url, alt, contain = false }: { url: string; alt: string; contain?: boolean }) {
   const [imgSrc, setImgSrc] = useState<string | null>(() => {
     if (url.includes('ibb.co') && !url.includes('i.ibb.co')) {
       return resolvedCache.get(url) ?? null;

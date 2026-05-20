@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Play, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, ListMusic, Shuffle, Share2 } from 'lucide-react';
+import { Plus, Play, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, ListMusic, Shuffle, Share2, ImagePlus } from 'lucide-react';
 import { usePlaylists } from '../PlaylistContext';
 import { Era, Song } from '../types';
+import { ArtEntry, ArtImage } from './ArtGallery';
+import { CoverPickerModal } from './CoverPickerModal';
 
 interface Props {
   eras: Era[];
+  artData?: ArtEntry[];
   searchQuery?: string;
   onPlaySong: (song: Song, era: Era, contextTracks?: Song[]) => void;
   onToast?: (msg: string) => void;
@@ -26,8 +29,9 @@ function resolvePlaylistSongs(playlist: ReturnType<typeof usePlaylists>['playlis
     .filter((s): s is Song => s !== null);
 }
 
-export function PlaylistsView({ eras, searchQuery = '', onPlaySong, onToast }: Props) {
-  const { playlists, createPlaylist, renamePlaylist, deletePlaylist, removeFromPlaylist, moveSong } = usePlaylists();
+export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong, onToast }: Props) {
+  const { playlists, createPlaylist, renamePlaylist, deletePlaylist, removeFromPlaylist, moveSong, setCover } = usePlaylists();
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -83,6 +87,7 @@ export function PlaylistsView({ eras, searchQuery = '', onPlaySong, onToast }: P
   };
 
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, filter: 'blur(10px)' }}
       animate={{ opacity: 1, filter: 'blur(0px)' }}
@@ -123,7 +128,10 @@ export function PlaylistsView({ eras, searchQuery = '', onPlaySong, onToast }: P
                 selectedId === p.id ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <ListMusic className="w-4 h-4 shrink-0 text-white/30" />
+              {p.cover
+                ? <div className="w-8 h-8 rounded overflow-hidden shrink-0"><ArtImage url={p.cover} alt={p.name} /></div>
+                : <ListMusic className="w-4 h-4 shrink-0 text-white/30" />
+              }
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">{p.name}</div>
                 <div className="text-[10px] text-white/30">{p.songs.length} song{p.songs.length !== 1 ? 's' : ''}</div>
@@ -177,7 +185,25 @@ export function PlaylistsView({ eras, searchQuery = '', onPlaySong, onToast }: P
               className="flex flex-col"
             >
               {/* Playlist header */}
-              <div className="px-6 py-5 border-b border-white/5 flex items-center gap-4">
+              <div className="px-6 py-5 border-b border-white/5 flex items-start gap-5">
+                {/* Cover */}
+                <button
+                  onClick={() => setShowCoverPicker(true)}
+                  className="group relative w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-[var(--theme-color)] transition-all cursor-pointer"
+                  title="Change cover"
+                >
+                  {selectedPlaylist.cover ? (
+                    <ArtImage url={selectedPlaylist.cover} alt={selectedPlaylist.name} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ListMusic className="w-8 h-8 text-white/20" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <ImagePlus className="w-5 h-5 text-white" />
+                  </div>
+                </button>
+
                 <div className="flex-1 min-w-0">
                   {renamingId === selectedPlaylist.id ? (
                     <div className="flex items-center gap-2">
@@ -314,5 +340,15 @@ export function PlaylistsView({ eras, searchQuery = '', onPlaySong, onToast }: P
         </AnimatePresence>
       </div>
     </motion.div>
+
+    {showCoverPicker && selectedPlaylist && (
+      <CoverPickerModal
+        eras={eras}
+        artData={artData}
+        onSelect={(url) => setCover(selectedPlaylist.id, url)}
+        onClose={() => setShowCoverPicker(false)}
+      />
+    )}
+    </>
   );
 }
