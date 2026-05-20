@@ -3,6 +3,7 @@ import { X, Search } from 'lucide-react';
 import { Era } from '../types';
 import { ArtEntry } from './ArtGallery';
 import { ArtImage, resolveImbbUrl } from './ArtGallery';
+import { CUSTOM_IMAGES } from '../utils';
 
 function isImageUrl(url: string): boolean {
   const lc = url.toLowerCase();
@@ -43,8 +44,8 @@ export function CoverPickerModal({ eras, artData, onSelect, onClose }: Props) {
 
   const eraCovers = useMemo(() =>
     eras
-      .filter(e => e.image && e.name !== 'Favorites')
-      .map(e => ({ url: e.image!, label: e.name }))
+      .filter(e => e.name !== 'Favorites' && (CUSTOM_IMAGES[e.name] || e.image))
+      .map(e => ({ url: CUSTOM_IMAGES[e.name] || e.image!, label: e.name }))
       .filter(e => !search || e.label.toLowerCase().includes(search.toLowerCase())),
     [eras, search]
   );
