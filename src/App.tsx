@@ -113,7 +113,7 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const raw = params.get('playlist');
       if (!raw) return null;
-      return JSON.parse(atob(raw));
+      return JSON.parse(decodeURIComponent(atob(raw)));
     } catch {
       return null;
     }
