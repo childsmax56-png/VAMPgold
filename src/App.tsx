@@ -407,6 +407,16 @@ export default function App() {
     }
   }, []);
 
+  // Re-read auth state when VaultGold syncs credentials into localStorage
+  useEffect(() => {
+    const handleVgSync = () => {
+      setSpotifyLoggedIn(isSpotifyLoggedIn());
+      setLastfmLoggedIn(isLastfmLoggedIn());
+    };
+    window.addEventListener('vg-synced', handleVgSync);
+    return () => window.removeEventListener('vg-synced', handleVgSync);
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const vgToken = params.get('vg_token');

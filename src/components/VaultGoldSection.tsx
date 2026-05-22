@@ -134,6 +134,7 @@ export function VaultGoldSection({ matchesSearch }: { matchesSearch: (s: string)
 
     setSyncing(false);
     setSyncMsg(synced.length ? `Synced ${synced.join(' & ')}` : 'No services linked yet');
+    if (synced.length) window.dispatchEvent(new CustomEvent('vg-synced'));
     setTimeout(() => setSyncMsg(''), 3000);
   };
 
