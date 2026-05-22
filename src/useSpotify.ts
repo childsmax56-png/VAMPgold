@@ -64,7 +64,8 @@ export interface SpotifyState {
 }
 
 export interface SpotifyControls {
-  playUri: (uri: string) => Promise<void>;
+  playUri: (uri: string) => Promise<boolean>;
+  pause: () => Promise<void>;
   togglePlay: () => Promise<void>;
   seek: (posMs: number) => Promise<void>;
   setVolume: (pct: number) => Promise<void>;
@@ -96,7 +97,7 @@ export function useSpotify(enabled: boolean): { state: SpotifyState; controls: S
       if (!token) return;
 
       const player = new window.Spotify.Player({
-        name: 'VAMPGOLD',
+        name: 'YZYGOLD',
         getOAuthToken: async (cb) => {
           const t = await getSpotifyToken();
           if (t) cb(t);
@@ -185,13 +186,20 @@ export function useSpotify(enabled: boolean): { state: SpotifyState; controls: S
   }, [state.isPlaying]);
 
   const controls: SpotifyControls = {
-    playUri: useCallback(async (uri: string) => {
+    playUri: useCallback(async (uri: string): Promise<boolean> => {
       const deviceId = deviceIdRef.current;
-      if (!deviceId) return;
-      await spotifyRequest(`/me/player/play?device_id=${deviceId}`, {
+      if (!deviceId) return false;
+      const res = await spotifyRequest(`/me/player/play?device_id=${deviceId}`, {
         method: 'PUT',
         body: JSON.stringify({ uris: [uri] }),
       });
+      return res.ok;
+    }, []),
+
+    pause: useCallback(async () => {
+      const ps = await playerRef.current?.getCurrentState();
+      if (ps && !ps.paused) await playerRef.current?.togglePlay();
+      setState(s => ({ ...s, isPlaying: false }));
     }, []),
 
     togglePlay: useCallback(async () => {

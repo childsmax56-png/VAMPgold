@@ -9,8 +9,9 @@ import {
   SiTidal,
   SiBandcamp,
 } from 'react-icons/si';
-import { Era } from '../types';
+import { Era, Song } from '../types';
 import { CUSTOM_IMAGES, ALBUM_DESCRIPTIONS } from '../utils';
+import { AddToPlaylistButton } from './AddToPlaylistButton';
 
 export interface ReleasedEntry {
   Era: string;
@@ -317,6 +318,7 @@ export function ReleasedView({ eras, releasedData, searchQuery, spotifyLoggedIn,
             <div className="w-20 shrink-0 text-right pr-2">Length</div>
             <div className="w-28 shrink-0">Type</div>
             <div className="w-48 shrink-0">Listen</div>
+            <div className="w-8 shrink-0" />
           </div>
 
           {filteredTracks.map((track, trackIdx) => {
@@ -366,7 +368,7 @@ export function ReleasedView({ eras, releasedData, searchQuery, spotifyLoggedIn,
                       const isOpen = openEmbed === key;
 
                       // Spotify: use SDK player if logged in + ready
-                      const useSpotifySDK = false;
+                      const useSpotifySDK = link.platform === 'spotify' && !!spotifyLoggedIn && !!spotifyReady && !!onPlaySpotify;
                       const spotifyUri = useSpotifySDK
                         ? (link.url.match(/open\.spotify\.com(?:\/intl-[a-z]+)?\/(track|album)\/([A-Za-z0-9]+)/)
                             ? `spotify:${link.url.match(/open\.spotify\.com(?:\/intl-[a-z]+)?\/(track|album)\/([A-Za-z0-9]+)/)![1]}:${link.url.match(/open\.spotify\.com(?:\/intl-[a-z]+)?\/(track|album)\/([A-Za-z0-9]+)/)![2]}`
@@ -422,6 +424,18 @@ export function ReleasedView({ eras, releasedData, searchQuery, spotifyLoggedIn,
                       );
                     })}
                   </div>
+
+                  {/* add to playlist */}
+                  {links.length > 0 && (
+                    <div className="w-8 shrink-0 hidden sm:flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <AddToPlaylistButton
+                        song={{ name: mainName, url: links[0].url, track_length: track.Length } as unknown as Song}
+                        eraName={selectedGroup.eraName}
+                        url={links[0].url}
+                        isCurrentlyPlaying={false}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* inline embed accordion */}

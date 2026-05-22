@@ -39,6 +39,20 @@ export interface TrackerData {
   eras: Record<string, Era>;
 }
 
+export interface PlaylistSong {
+  songName: string;
+  eraName: string;
+  url: string;
+  song?: Song;
+}
+
+export interface UserPlaylist {
+  id: string;
+  name: string;
+  cover?: string;
+  songs: PlaylistSong[];
+}
+
 export interface SearchFilters {
   tags: string[];
   excludedTags: string[];
