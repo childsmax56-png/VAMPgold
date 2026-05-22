@@ -198,7 +198,14 @@ export function VaultGoldSection({ matchesSearch }: { matchesSearch: (s: string)
                 {syncing ? 'Syncing...' : 'Sync Services'}
               </button>
               <button
-                onClick={() => window.open(`${API}/account`, '_blank')}
+                onClick={() => {
+                  const token = getToken();
+                  const u = user;
+                  const params = token && u
+                    ? `?vg_token=${encodeURIComponent(token)}&vg_user=${encodeURIComponent(JSON.stringify(u))}`
+                    : '';
+                  window.open(`${API}/account${params}`, '_blank');
+                }}
                 className="flex items-center gap-1.5 text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 transition-colors cursor-pointer"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
