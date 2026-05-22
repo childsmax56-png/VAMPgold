@@ -69,6 +69,9 @@ export interface FakesEntry {
 import { SettingsView } from './components/SettingsView';
 import { HistoryView } from './components/HistoryView';
 import { FakesView } from './components/FakesView';
+import { PlaylistsView } from './components/PlaylistsView';
+import { ImportPlaylistModal } from './components/ImportPlaylistModal';
+import { PlaylistProvider } from './PlaylistContext';
 import { ReleasedView, ReleasedEntry } from './components/ReleasedView';
 import { VideosView, VideoRawEntry } from './components/VideosView';
 import { ChatBubble } from './components/ChatBubble';
@@ -104,6 +107,17 @@ export default function App() {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  const [pendingImport, setPendingImport] = useState<{ name: string; cover?: string; songs: { songName: string; eraName: string; url: string }[] } | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const raw = params.get('playlist');
+      if (!raw) return null;
+      return JSON.parse(decodeURIComponent(atob(raw)));
+    } catch {
+      return null;
+    }
+  });
 
   const [activeCategory, setActiveCategory] = useState<Category>(() => {
     const path = window.location.pathname;
@@ -386,11 +400,29 @@ export default function App() {
   }, [volume]);
 
   useEffect(() => {
-    if (window.location.search.includes('code=') || window.location.hash.includes('spotify_access_token=')) {
+    if (window.location.search.includes('code=')) {
       handleSpotifyCallback().then(ok => {
         if (ok) setSpotifyLoggedIn(true);
       });
     }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const vgToken = params.get('vg_token');
+    const vgUserRaw = params.get('vg_user');
+    if (!vgToken || !vgUserRaw) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    try {
+      const vgUser = JSON.parse(decodeURIComponent(vgUserRaw));
+      if (window.opener) {
+        window.opener.postMessage({ vaultgold: 'signed_in', token: vgToken, user: vgUser }, '*');
+        window.close();
+      } else {
+        localStorage.setItem('vg_token', vgToken);
+        localStorage.setItem('vg_user', JSON.stringify(vgUser));
+      }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -1184,6 +1216,7 @@ export default function App() {
   };
 
   const handlePlaySong = async (song: Song, era: Era, contextTracks?: Song[], resetShuffleHistory = true, autoPlay = true, isRandomSelection = false) => {
+    if (activePlayer === 'spotify') spotifyControls.pause();
     const rawUrl = song.url || (song.urls && song.urls.length > 0 ? song.urls[0] : '');
     const isNotAvailable = isSongNotAvailable(song, rawUrl);
     
@@ -1702,6 +1735,7 @@ export default function App() {
   };
 
   const handlePlayYoutubeTrack = (videoId: string, title?: string) => {
+    if (activePlayer === 'spotify') spotifyControls.pause();
     if (!youtubeState.isReady) return;
     if (audioRef.current) {
       audioRef.current.pause();
@@ -1713,6 +1747,7 @@ export default function App() {
   };
 
   const handlePlaySoundCloudTrack = (url: string) => {
+    if (activePlayer === 'spotify') spotifyControls.pause();
     if (!soundcloudState.isReady) return;
     if (audioRef.current) {
       audioRef.current.pause();
@@ -1774,6 +1809,8 @@ export default function App() {
       if (!finalErasArray.find(e => e.name === selectedAlbum.name)) {
         setSelectedAlbum(null);
       }
+    } else {
+      setSelectedAlbum(null);
     }
     setActiveCategory(cat);
   };
@@ -2118,6 +2155,7 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
   const showPlayer = !!effectiveSong && !isFullScreen && !isPlayerClosed;
 
   return (
+    <PlaylistProvider>
     <div className="h-dvh w-full flex overflow-hidden relative bg-yzy-black">
       <audio
         ref={audioRef}
@@ -2317,6 +2355,15 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
                   samplesData={samplesData}
                   favoriteKeys={favoriteKeys}
                   toggleFavorite={toggleFavorite}
+                />
+              ) : activeCategory === 'playlists' ? (
+                <PlaylistsView
+                  key="playlists"
+                  eras={erasArray}
+                  artData={artData}
+                  searchQuery={searchQuery}
+                  onPlaySong={handlePlaySong}
+                  onToast={showToast}
                 />
               ) : activeCategory === 'related' ? (
                 <EraGrid key="related-grid" eras={filteredRelatedEras} onSelectEra={setSelectedAlbum} />
@@ -2681,5 +2728,19 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
         onOpenChange={setYeiOpen}
       />
     </div>
+
+    {pendingImport && (
+      <ImportPlaylistModal
+        pending={pendingImport}
+        onDone={() => {
+          setPendingImport(null);
+          const url = new URL(window.location.href);
+          url.searchParams.delete('playlist');
+          window.history.replaceState({}, '', url.toString());
+        }}
+        onNavigatePlaylists={() => setActiveCategory('playlists')}
+      />
+    )}
+    </PlaylistProvider>
   );
 }

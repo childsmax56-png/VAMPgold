@@ -100,7 +100,11 @@ export function VaultGoldSection({ matchesSearch }: { matchesSearch: (s: string)
   };
 
   const doGoogle = () => {
-    window.open(`${API}/api/auth/google/connect`, 'vg-google', 'width=500,height=600');
+    window.open(
+      `${API}/api/auth/google/connect?return_to=${encodeURIComponent(window.location.origin)}`,
+      'vg-google',
+      'width=500,height=600'
+    );
   };
 
   const doSync = async () => {
