@@ -1728,8 +1728,9 @@ export default function App() {
   };
 
   const handlePlaySpotifyTrack = async (uri: string) => {
+    if (!spotifyState.isReady) { showToast('Spotify player is still connecting — try again in a moment'); return; }
     const ok = await spotifyControls.playUri(uri);
-    if (!ok) return;
+    if (!ok) { showToast('Spotify playback failed. Make sure you have Spotify Premium.'); return; }
     if (audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
