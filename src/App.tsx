@@ -2229,13 +2229,8 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
           onHomeClick={handleHomeClick}
           activeCategory={activeCategory}
           onCategoryChange={handleCategoryChange}
-          lastfmLoggedIn={lastfmLoggedIn}
-          onLastfmLogout={() => setLastfmLoggedIn(false)}
           onRandomSongClick={handleRandomSongClick}
           isRandomMode={isRandomMode}
-          spotifyLoggedIn={spotifyLoggedIn}
-          onSpotifyLogin={startSpotifyAuth}
-          onSpotifyLogout={() => { clearSpotifySession(); setSpotifyLoggedIn(false); setActivePlayer('audio'); }}
           yeiOpen={yeiOpen}
           onYEIClick={() => setYeiOpen(o => !o)}
         />
@@ -2322,7 +2317,6 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
                   eras={erasArray}
                   releasedData={releasedData}
                   searchQuery={searchQuery}
-                  spotifyLoggedIn={spotifyLoggedIn}
                   spotifyReady={spotifyState.isReady}
                   onPlaySpotify={handlePlaySpotifyTrack}
                   youtubeReady={youtubeState.isReady}
@@ -2394,7 +2388,7 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
               VAMPGOLD 2026 ©
             </p>
             <p className="text-[10px] text-white/30 leading-relaxed mt-1">
-              Logo created by Nr7th on discord
+              logo created by YZYsam on discord
             </p>
             <p className="text-[10px] text-white/30 leading-relaxed mt-1 space-x-3">
               <a href="https://discord.gg/TYqdey3B" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-color)]/50 hover:text-[var(--theme-color)] transition-colors underline">Discord</a>
