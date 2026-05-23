@@ -408,10 +408,12 @@ export default function App() {
   }, []);
 
   // Re-read auth state when VaultGold syncs credentials into localStorage
+  // Force useSpotify to fully reinitialize by toggling enabled false→true
   useEffect(() => {
     const handleVgSync = () => {
-      setSpotifyLoggedIn(isSpotifyLoggedIn());
       setLastfmLoggedIn(isLastfmLoggedIn());
+      setSpotifyLoggedIn(false);
+      setTimeout(() => setSpotifyLoggedIn(isSpotifyLoggedIn()), 100);
     };
     window.addEventListener('vg-synced', handleVgSync);
     return () => window.removeEventListener('vg-synced', handleVgSync);
