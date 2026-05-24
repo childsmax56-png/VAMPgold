@@ -1025,7 +1025,7 @@ export default function App() {
     const userAgent = navigator.userAgent.toLowerCase();
     const isBrowserSafari = userAgent.includes('safari') && !userAgent.includes('chrome') && !userAgent.includes('crios') && !userAgent.includes('android');
 
-    if (!localStorage.getItem('v1_8_5_seen')) {
+    if (!localStorage.getItem('v2_0_seen')) {
       setShowChangelog(true);
     } else if (isBrowserSafari) {
       setShowSafariWarning(true);
@@ -2385,7 +2385,7 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
               VAMPGOLD does not host or hold any illegal files. All links are external and provided as-is for educational and archival purposes only.
             </p>
             <p className="text-[10px] text-white/30 leading-relaxed">
-              VAMPGOLD 2026 ©
+              VAMPGOLD 2026 © · v2.0
             </p>
             <p className="text-[10px] text-white/30 leading-relaxed mt-1">
               logo created by YZYsam on discord
@@ -2595,24 +2595,38 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
               exit={{ scale: 0.95, y: 20 }}
               className="bg-[#111] border border-white/10 rounded-xl max-w-lg w-full p-6 md:p-8"
             >
-              <h2 className="text-2xl font-bold text-white mb-4 tracking-tight font-display uppercase">
-                WELCOME TO VAMPGOLD
+              <h2 className="text-2xl font-bold text-white mb-1 tracking-tight font-display">
+                Version 2.0
               </h2>
+              <p className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-6">What's New</p>
 
               <div className="space-y-4 mb-8 text-sm text-white/70 leading-relaxed">
-                <p>View and download pretty much everything related to Playboi Carti</p>
-                <p>
-                  report any bugs to{' '}
-                  <a href="https://discord.gg/xYhKgCDX8h" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-color)] hover:underline">
-                    Discord
-                  </a>
-                </p>
+                <ul className="space-y-4">
+                  <li>
+                    <strong className="text-white">Playlists</strong>
+                    <p className="mt-1">You can now create playlists of released and unreleased leaks and share and download them</p>
+                  </li>
+                  <li>
+                    <strong className="text-white">VAULTgold Accounts</strong>
+                    <p className="mt-1">This was made so to link your Spotify and Last.fm accounts easier, just make an account in settings</p>
+                  </li>
+                  <li className="text-white/50">And more general stability and bug fixes</li>
+                </ul>
+
+                <div className="border-t border-white/10 pt-4 space-y-2">
+                  <p className="text-white font-semibold">TUNE IN TOMORROW FOR THE NEW VAULT GOLD TRACKERS</p>
+                  <p className="text-xs space-x-3">
+                    <a href="https://discord.gg/TYqdey3B" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-color)]/70 hover:text-[var(--theme-color)] transition-colors underline">Discord</a>
+                    <span>·</span>
+                    <a href="https://www.reddit.com/r/2YZY2GOLD/" target="_blank" rel="noopener noreferrer" className="text-[var(--theme-color)]/70 hover:text-[var(--theme-color)] transition-colors underline">Reddit</a>
+                  </p>
+                </div>
               </div>
 
               <button
                 onClick={() => {
                   setShowChangelog(false);
-                  localStorage.setItem('v1_8_5_seen', 'true');
+                  localStorage.setItem('v2_0_seen', 'true');
 
                   const userAgent = navigator.userAgent.toLowerCase();
                   const isBrowserSafari = userAgent.includes('safari') && !userAgent.includes('chrome') && !userAgent.includes('crios') && !userAgent.includes('android');
