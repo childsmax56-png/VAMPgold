@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { createPortal } from 'react-dom';
 import { XCircle, ChevronUp, X } from 'lucide-react';
 import axios from 'axios';
 import { Navbar, Category } from './components/Navbar';
+import { GlobalSearchResult } from './components/GlobalSearchPanel';
 import { EraGrid } from './components/EraGrid';
 import { EraDetail, findMvsForSong, findRemixesForSong, findSamplesForSong } from './components/EraDetail';
 import { PlayerBar } from './components/PlayerBar';
@@ -77,6 +78,7 @@ import { VideosView, VideoRawEntry } from './components/VideosView';
 import { ChatBubble } from './components/ChatBubble';
 import { useSettings, LOADING_SCREENS } from './SettingsContext';
 import { recordListeningHistory } from './history';
+import { TimelineView } from './components/TimelineView';
 
 const ERA_MAPPINGS: Record<string, string> = {};
 
@@ -87,6 +89,7 @@ export default function App() {
   const [loadingFading, setLoadingFading] = useState(false);
   const [gifReady, setGifReady] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showV21Popup, setShowV21Popup] = useState(false);
   const [showSafariWarning, setShowSafariWarning] = useState(false);
   const [mvData, setMvData] = useState<MvEntry[]>([]);
   const [remixData, setRemixData] = useState<RemixEntry[]>([]);
@@ -100,6 +103,7 @@ export default function App() {
   const [releasedData, setReleasedData] = useState<ReleasedEntry[]>([]);
   const [videosData, setVideosData] = useState<VideoRawEntry[]>([]);
   const [isRandomMode, setIsRandomMode] = useState(false);
+  const [isTimelineMode, setIsTimelineMode] = useState(false);
   const [popupUrl, setPopupUrl] = useState<string | null>(null);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -1025,7 +1029,9 @@ export default function App() {
     const userAgent = navigator.userAgent.toLowerCase();
     const isBrowserSafari = userAgent.includes('safari') && !userAgent.includes('chrome') && !userAgent.includes('crios') && !userAgent.includes('android');
 
-    if (!localStorage.getItem('v2_0_seen')) {
+    if (!localStorage.getItem('v2_1_seen')) {
+      setShowV21Popup(true);
+    } else if (!localStorage.getItem('v2_0_seen')) {
       setShowChangelog(true);
     } else if (isBrowserSafari) {
       setShowSafariWarning(true);
@@ -1809,7 +1815,68 @@ export default function App() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
+  const globalSearchResults = useMemo((): GlobalSearchResult[] => {
+    if (!searchQuery || searchQuery.trim().length < 2) return [];
+    const q = searchQuery.toLowerCase().trim();
+    const results: GlobalSearchResult[] = [];
+    const PER_TAB = 5;
+
+    if (data) {
+      let musicCount = 0;
+      let relatedCount = 0;
+      for (const era of Object.values(data.eras || {}) as Era[]) {
+        const isRelated = HIDDEN_ALBUMS.includes(era.name);
+        const count = isRelated ? relatedCount : musicCount;
+        if (count >= PER_TAB) continue;
+        outer: for (const songs of Object.values(era.data || {})) {
+          for (const song of songs as Song[]) {
+            const c = isRelated ? relatedCount : musicCount;
+            if (c >= PER_TAB) break outer;
+            if (song.name.toLowerCase().includes(q)) {
+              results.push({ name: song.name, extra: song.extra, eraName: era.name, tab: isRelated ? 'related' : 'music', era: { ...era, image: CUSTOM_IMAGES[era.name] || era.image }, song });
+              if (isRelated) relatedCount++; else musicCount++;
+            }
+          }
+        }
+      }
+    }
+
+    let recentCount = 0;
+    for (const song of recentData) {
+      if (recentCount >= PER_TAB) break;
+      if (song.name.toLowerCase().includes(q)) { results.push({ name: song.name, extra: song.extra, eraName: song.extra2 || 'Recent', tab: 'recent', song }); recentCount++; }
+    }
+    let stemsCount = 0;
+    for (const entry of stemsData) {
+      if (stemsCount >= PER_TAB) break;
+      if (entry.Name.toLowerCase().includes(q)) { results.push({ name: entry.Name, eraName: entry.Era, tab: 'stems' }); stemsCount++; }
+    }
+    let miscCount = 0;
+    for (const entry of miscData) {
+      if (miscCount >= PER_TAB) break;
+      if (entry.Name.toLowerCase().includes(q)) { results.push({ name: entry.Name, eraName: entry.Era, tab: 'misc' }); miscCount++; }
+    }
+    let fakesCount = 0;
+    for (const entry of fakesData) {
+      if (fakesCount >= PER_TAB) break;
+      if (entry.Name.toLowerCase().includes(q)) { results.push({ name: entry.Name, eraName: entry.Era, tab: 'fakes' }); fakesCount++; }
+    }
+    let releasedCount = 0;
+    for (const entry of releasedData) {
+      if (releasedCount >= PER_TAB) break;
+      if (entry.Name.toLowerCase().includes(q)) { results.push({ name: entry.Name, eraName: entry.Era, tab: 'released' }); releasedCount++; }
+    }
+    return results;
+  }, [searchQuery, data, recentData, stemsData, miscData, fakesData, releasedData]);
+
+  const handleSelectGlobalResult = (result: GlobalSearchResult) => {
+    if (result.tab === 'music' && result.era) { setActiveCategory('music'); setSelectedAlbum(result.era); }
+    else if (result.tab === 'related' && result.era) { setActiveCategory('related'); setSelectedAlbum(result.era); }
+    else { setActiveCategory(result.tab as Category); setSelectedAlbum(null); }
+  };
+
   const handleCategoryChange = (cat: Category) => {
+    if (cat !== 'music') setIsTimelineMode(false);
     if (cat === 'music' && selectedAlbum) {
       if (!finalErasArray.find(e => e.name === selectedAlbum.name)) {
         setSelectedAlbum(null);
@@ -2231,8 +2298,12 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
           onCategoryChange={handleCategoryChange}
           onRandomSongClick={handleRandomSongClick}
           isRandomMode={isRandomMode}
+          isTimelineMode={isTimelineMode}
+          onTimelineToggle={() => setIsTimelineMode(m => !m)}
           yeiOpen={yeiOpen}
           onYEIClick={() => setYeiOpen(o => !o)}
+          globalSearchResults={globalSearchResults}
+          onSelectGlobalResult={handleSelectGlobalResult}
         />
 
         <main className={`flex-1 overflow-y-auto relative scroll-smooth bg-[#0a0a0a] flex flex-col ${showPlayer ? 'pb-44 md:pb-28' : ''}`}>
@@ -2374,6 +2445,13 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
                 />
               ) : activeCategory === 'related' ? (
                 <EraGrid key="related-grid" eras={filteredRelatedEras} onSelectEra={setSelectedAlbum} />
+              ) : isTimelineMode ? (
+                <TimelineView
+                  key="timeline"
+                  eras={[...erasArray, ...relatedErasArray]}
+                  searchQuery={searchQuery}
+                  onSelectEra={setSelectedAlbum}
+                />
               ) : (
                 <EraGrid key="grid" eras={filteredEras} onSelectEra={setSelectedAlbum} />
               )}
@@ -2385,7 +2463,7 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
               VAMPGOLD does not host or hold any illegal files. All links are external and provided as-is for educational and archival purposes only.
             </p>
             <p className="text-[10px] text-white/30 leading-relaxed">
-              VAMPGOLD 2026 © · v2.0
+              VAMPGOLD 2026 © · v2.1
             </p>
             <p className="text-[10px] text-white/30 leading-relaxed mt-1">
               logo created by YZYsam on discord
@@ -2575,6 +2653,60 @@ let relatedErasArray = (Object.values(data.eras || {}) as Era[])
                 className="w-full bg-[var(--theme-color)] text-black font-bold uppercase tracking-widest py-3 rounded-lg hover:bg-[var(--theme-color)]/90 transition-colors"
               >
                 I Understand
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showV21Popup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-[#111] border border-white/10 rounded-xl max-w-lg w-full p-6 md:p-8"
+            >
+              <h2 className="text-2xl font-bold text-white mb-1 tracking-tight font-display">
+                Version 2.1
+              </h2>
+              <p className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-6">What's New</p>
+
+              <div className="space-y-4 mb-8 text-sm text-white/70 leading-relaxed">
+                <ul className="space-y-4">
+                  <li>
+                    <strong className="text-white">New Logo</strong>
+                    <p className="mt-1">VAMPgold has a fresh new VG-01 logo design</p>
+                  </li>
+                  <li>
+                    <strong className="text-white">VAULTgold My Tracker</strong>
+                    <p className="mt-1">Load any custom Google Sheets tracker with audio playback at vaultgold.pages.dev</p>
+                  </li>
+                  <li className="text-white/50">And more general stability and bug fixes</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowV21Popup(false);
+                  localStorage.setItem('v2_0_seen', 'true');
+                  localStorage.setItem('v2_1_seen', 'true');
+
+                  const userAgent = navigator.userAgent.toLowerCase();
+                  const isBrowserSafari = userAgent.includes('safari') && !userAgent.includes('chrome') && !userAgent.includes('crios') && !userAgent.includes('android');
+                  if (isBrowserSafari) {
+                    setTimeout(() => setShowSafariWarning(true), 400);
+                  }
+                }}
+                className="w-full bg-[var(--theme-color)] text-black font-bold uppercase tracking-widest py-3 rounded-lg hover:bg-[var(--theme-color)]/90 transition-colors"
+              >
+                Got It
               </button>
             </motion.div>
           </motion.div>

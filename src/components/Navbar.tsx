@@ -1,13 +1,13 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, DollarSign, LogIn, LogOut, Settings, Dice5, X, ChevronDown, MessageCircle } from 'lucide-react';
+import { Search, DollarSign, LogIn, LogOut, Settings, Dice5, X, ChevronDown, GanttChart, LayoutGrid } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { SiLastdotfm, SiSpotify, SiDiscord, SiReddit, SiTiktok } from 'react-icons/si';
+import { SiDiscord, SiReddit, SiTiktok } from 'react-icons/si';
 import { FilterMenu } from './FilterMenu';
 import { SearchFilters } from '../types';
-import { isLastfmLoggedIn, getLastfmUsername, clearLastfmSession, startLastfmAuth } from '../lastfm';
 import { useSettings } from '../SettingsContext';
+import { GlobalSearchPanel, GlobalSearchResult } from './GlobalSearchPanel';
 
-export type Category = 'music' | 'art' | 'recent' | 'stems' | 'misc' | 'fakes' | 'related' | 'settings' | 'history' | 'tracklists' | 'released' | 'videos' | 'playlists';
+export type Category = 'music' | 'art' | 'recent' | 'stems' | 'misc' | 'fakes' | 'related' | 'settings' | 'history' | 'tracklists' | 'released' | 'yedits' | 'comps' | 'videos' | 'playlists' | 'subalbums';
 
 interface NavbarProps {
   searchQuery: string;
@@ -17,15 +17,14 @@ interface NavbarProps {
   onHomeClick: () => void;
   activeCategory: Category;
   onCategoryChange: (cat: Category) => void;
-  lastfmLoggedIn: boolean;
-  onLastfmLogout: () => void;
   onRandomSongClick?: () => void;
   isRandomMode?: boolean;
-  spotifyLoggedIn?: boolean;
-  onSpotifyLogin?: () => void;
-  onSpotifyLogout?: () => void;
+  isTimelineMode?: boolean;
+  onTimelineToggle?: () => void;
   yeiOpen: boolean;
   onYEIClick: () => void;
+  globalSearchResults?: GlobalSearchResult[];
+  onSelectGlobalResult?: (result: GlobalSearchResult) => void;
 }
 
 const NAV_CATEGORIES: { key: Category; label: string }[] = [
@@ -38,13 +37,17 @@ const NAV_CATEGORIES: { key: Category; label: string }[] = [
   { key: 'related', label: 'Related' },
   { key: 'recent', label: 'Recent' },
   { key: 'tracklists', label: 'Tracklists' },
+  { key: 'yedits', label: 'Yedit Affiliates' },
+  { key: 'comps', label: 'Comps' },
   { key: 'videos', label: 'Videos' },
   { key: 'playlists', label: 'Playlists' },
+  { key: 'subalbums', label: 'Sub Albums' },
 ];
 
-export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHomeClick, activeCategory, onCategoryChange, lastfmLoggedIn, onLastfmLogout, onRandomSongClick, isRandomMode, spotifyLoggedIn, onSpotifyLogin, onSpotifyLogout, yeiOpen, onYEIClick }: NavbarProps) {
+export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHomeClick, activeCategory, onCategoryChange, onRandomSongClick, isRandomMode, isTimelineMode, onTimelineToggle, yeiOpen, onYEIClick, globalSearchResults, onSelectGlobalResult }: NavbarProps) {
   const { settings } = useSettings();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const desktopDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +63,7 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
     return () => document.removeEventListener('mousedown', handler);
   }, [dropdownOpen]);
 
-  const visibleCategories = NAV_CATEGORIES;
+  const visibleCategories = NAV_CATEGORIES.filter(({ key }) => !(settings.yzyGoldMode && key === 'yedits'));
   const activeLabel = visibleCategories.find(c => c.key === activeCategory)?.label ?? 'Navigate';
 
   const handleCategoryClick = (cat: Category) => {
@@ -70,17 +73,6 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
     }
   };
 
-  const handleLastfmClick = () => {
-    if (lastfmLoggedIn) {
-      clearLastfmSession();
-      onLastfmLogout();
-    } else {
-      startLastfmAuth();
-    }
-  };
-
-  const lastfmUsername = getLastfmUsername();
-
   return (
     <header className="h-auto md:h-16 w-full glass-panel border-b border-white/5 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-3 md:py-0 z-30 relative shrink-0 gap-3 md:gap-0">
       <div className="flex flex-col w-full md:flex-1">
@@ -88,23 +80,26 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
           <div className="md:hidden flex items-center shrink-0">
             <img
               src="/logo.png"
-              alt="YZY Gold"
+              alt="VAMPgold"
               onClick={onHomeClick}
-              className="h-[48px] w-[160px] object-contain object-left cursor-pointer hover:opacity-80 transition-opacity duration-300"
+              className="h-[40px] w-auto object-contain object-left cursor-pointer hover:opacity-80 transition-opacity duration-300"
             />
           </div>
 
           {activeCategory !== 'history' && (
             <div
-              className="flex items-center gap-2 shrink-0 md:flex-1 md:max-w-none md:ml-0 transition-opacity duration-500"
+              className="flex items-center gap-2 flex-1 max-w-[55%] md:max-w-none md:ml-0 transition-opacity duration-500"
             >
-              <div className="relative group w-32 shrink-0">
+              <div className="relative group flex-1">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/40" />
                 <input
                   type="text"
                   placeholder={activeCategory === 'settings' ? "Search settings..." : "Search..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setIsSearchFocused(false); }}
                   className="w-full bg-white/5 border border-white/10 rounded-md py-1 pl-8 pr-7 text-xs text-white focus:outline-none focus:border-white/30 transition-colors placeholder:text-white/30"
                 />
                 {searchQuery && (
@@ -115,6 +110,18 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
                     <X className="w-4 h-4" />
                   </button>
                 )}
+                <AnimatePresence>
+                  {isSearchFocused && activeCategory !== 'settings' && globalSearchResults && globalSearchResults.length > 0 && (
+                    <GlobalSearchPanel
+                      results={globalSearchResults}
+                      query={searchQuery}
+                      onSelect={(result) => {
+                        setIsSearchFocused(false);
+                        onSelectGlobalResult?.(result);
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
               </div>
               {/* filter/shuffle shown on mobile only — desktop versions live in center */}
               <div className="md:hidden flex items-center gap-2">
@@ -129,14 +136,25 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
                     <Dice5 className="w-4 h-4" />
                   </button>
                 )}
+                {activeCategory === 'music' && onTimelineToggle && (
+                  <button
+                    onClick={onTimelineToggle}
+                    title={isTimelineMode ? 'Switch to Grid' : 'Switch to Timeline'}
+                    className={`flex items-center justify-center cursor-pointer transition-colors p-1.5 rounded-md border ${isTimelineMode ? 'border-[var(--theme-color)] bg-white/10' : 'border-transparent text-white/40 hover:text-white hover:bg-white/5'}`}
+                    style={isTimelineMode ? { color: 'var(--theme-color)' } : {}}
+                  >
+                    {isTimelineMode ? <LayoutGrid className="w-4 h-4" /> : <GanttChart className="w-4 h-4" />}
+                  </button>
+                )}
               </div>
               {/* desktop logo fills the gap between search and center */}
-              <div className="hidden md:block w-[170px] h-[60px] shrink-0 overflow-hidden">
+              <div className="hidden md:block max-w-[220px] h-[48px] shrink-0">
                 <img
                   src="/logo.png"
-                  alt="VAMP Gold"
+                  alt="VAMPgold"
                   onClick={onHomeClick}
-                  className="w-full h-full object-contain cursor-pointer hover:opacity-80 transition-opacity duration-300"
+                  className="h-full w-auto object-contain cursor-pointer hover:opacity-80 transition-opacity duration-300"
+                  style={{ objectPosition: 'center center' }}
                 />
               </div>
             </div>
@@ -198,17 +216,6 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
             <button onClick={() => handleCategoryClick('settings')} className={`flex items-center p-2.5 rounded-full transition-all bg-white/5 text-white/50 hover:bg-white/10 hover:text-white ${activeCategory === 'settings' ? 'text-white bg-white/10' : ''}`}>
                <Settings className="w-5 h-5" />
             </button>
-            <button
-              onClick={() => spotifyLoggedIn ? onSpotifyLogout?.() : onSpotifyLogin?.()}
-              className={`flex items-center justify-center p-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                spotifyLoggedIn
-                  ? 'bg-[#1DB954]/15 text-[#1DB954] hover:bg-[#1DB954]/25'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
-              }`}
-              title={spotifyLoggedIn ? 'Disconnect Spotify' : 'Connect Spotify'}
-            >
-              <SiSpotify className="w-5 h-5" />
-            </button>
             <a
               href="https://discord.gg/xYhKgCDX8h"
               target="_blank"
@@ -250,25 +257,13 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
               <DollarSign className="w-5 h-5" />
             </a>
             <button
-              onClick={handleLastfmClick}
-              className={`flex items-center justify-center p-2.5 rounded-full transition-all duration-300 cursor-pointer ${lastfmLoggedIn
-                ? 'bg-[#d51007]/15 text-[#d51007] hover:bg-[#d51007]/25'
-                : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
-                }`}
-              title={lastfmLoggedIn ? `Log out ${lastfmUsername || ''}` : 'Log in with Last.fm'}
-            >
-              <SiLastdotfm className="w-5 h-5" />
-            </button>
-            <button
               onClick={onYEIClick}
-              className={`flex items-center justify-center p-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                yeiOpen
-                  ? 'bg-[var(--theme-color)]/15 text-[var(--theme-color)]'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+              className={`flex items-center justify-center p-2.5 rounded-full transition-all duration-300 cursor-pointer overflow-hidden ${
+                yeiOpen ? 'bg-white/10' : 'bg-white/5 hover:bg-white/10'
               }`}
-              title="Ask AI about music"
+              title="Ask YE-I"
             >
-              <MessageCircle className="w-5 h-5" />
+              <img src="https://i.ibb.co/TMFsFsSp/YE-I-01.png" alt="YE-I" className="w-5 h-5 rounded-full object-cover" />
             </button>
           </div>
         </div>
@@ -286,6 +281,16 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
                 style={isRandomMode ? { color: 'var(--theme-color)' } : {}}
               >
                 <Dice5 className="w-4 h-4" />
+              </button>
+            )}
+            {activeCategory === 'music' && onTimelineToggle && (
+              <button
+                onClick={onTimelineToggle}
+                title={isTimelineMode ? 'Switch to Grid' : 'Switch to Timeline'}
+                className={`flex items-center justify-center cursor-pointer transition-colors p-1.5 rounded-md border ${isTimelineMode ? 'border-[var(--theme-color)] bg-white/10' : 'border-transparent text-white/40 hover:text-white hover:bg-white/5'}`}
+                style={isTimelineMode ? { color: 'var(--theme-color)' } : {}}
+              >
+                {isTimelineMode ? <LayoutGrid className="w-4 h-4" /> : <GanttChart className="w-4 h-4" />}
               </button>
             )}
           </div>
@@ -342,20 +347,6 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
       </div>
 
       <div className="flex-1 hidden md:flex justify-end items-center gap-2 md:gap-3">
-        <button
-          onClick={() => spotifyLoggedIn ? onSpotifyLogout?.() : onSpotifyLogin?.()}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-            spotifyLoggedIn
-              ? 'bg-[#1DB954]/15 text-[#1DB954] hover:bg-[#1DB954]/25 hover:scale-105'
-              : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white hover:scale-105'
-          }`}
-          title={spotifyLoggedIn ? 'Disconnect Spotify' : 'Connect Spotify'}
-        >
-          <SiSpotify className="w-4 h-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
-            {spotifyLoggedIn ? 'Spotify' : 'Spotify'}
-          </span>
-        </button>
         <a
           href="https://discord.gg/xYhKgCDX8h"
           target="_blank"
@@ -401,36 +392,16 @@ export function Navbar({ searchQuery, setSearchQuery, filters, setFilters, onHom
           <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Other Artist Trackers</span>
         </a>
         <button
-          onClick={handleLastfmClick}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 cursor-pointer ${lastfmLoggedIn
-            ? 'bg-[#d51007]/15 text-[#d51007] hover:bg-[#d51007]/25 hover:scale-105'
-            : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white hover:scale-105'
-            }`}
-          title={lastfmLoggedIn ? `Log out ${lastfmUsername || ''}` : 'Log in with Last.fm'}
-        >
-          <SiLastdotfm className="w-4 h-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
-            {lastfmLoggedIn ? (
-              <>
-                <span className="hidden lg:inline">{lastfmUsername} · </span>
-                Log Out
-              </>
-            ) : (
-              'Log In'
-            )}
-          </span>
-        </button>
-        <button
           onClick={onYEIClick}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all duration-300 cursor-pointer ${
             yeiOpen
-              ? 'bg-[var(--theme-color)]/15 text-[var(--theme-color)] hover:bg-[var(--theme-color)]/25 hover:scale-105'
+              ? 'bg-white/10 text-white hover:bg-white/15 hover:scale-105'
               : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white hover:scale-105'
           }`}
-          title="Ask AI about music"
+          title="Ask YE-I"
         >
-          <MessageCircle className="w-4 h-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">AI</span>
+          <img src="https://i.ibb.co/TMFsFsSp/YE-I-01.png" alt="YE-I" className="w-4 h-4 rounded-full object-cover" />
+          <span className="text-xs font-semibold uppercase tracking-wider whitespace-nowrap">YE-I</span>
         </button>
         <button
           onClick={() => {

@@ -97,7 +97,7 @@ async function refreshToken(): Promise<string | null> {
     }),
   });
 
-  if (!res.ok) { clearSpotifySession(); return null; }
+  if (!res.ok) return null;  // don't wipe session — let the caller surface a friendlier error
 
   const data = await res.json();
   localStorage.setItem('spotify_access_token', data.access_token);

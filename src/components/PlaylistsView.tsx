@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Play, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, ListMusic, Shuffle, Share2, ImagePlus } from 'lucide-react';
+import { Plus, Play, Trash2, Pencil, Check, X, ChevronUp, ChevronDown, ChevronLeft, ListMusic, Shuffle, Share2, ImagePlus, Download } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { usePlaylists } from '../PlaylistContext';
 import { Era, Song } from '../types';
 import { ArtEntry, ArtImage } from './ArtGallery';
@@ -26,7 +28,30 @@ function resolvePlaylistSongs(playlist: ReturnType<typeof usePlaylists>['playlis
       if (entry.song) return { ...entry.song, realEra: realEra ?? undefined };
       return null;
     })
-    .filter((s): s is Song => s !== null);
+    .filter(s => s !== null) as Song[];
+}
+
+async function resolveDownloadUrl(url: string): Promise<string | null> {
+  if (url.includes('pillows.su/f/') || url.includes('pillowcase.su/f/')) {
+    const host = url.includes('pillows.su') ? 'api.pillows.su' : 'api.pillowcase.su';
+    const hash = url.split('/f/')[1]?.split('/')[0]?.split('?')[0];
+    if (hash) return `https://${host}/api/get/${hash}`;
+  }
+  if (url.includes('temp.imgur.gg/f/')) {
+    const id = url.split('/f/')[1];
+    if (id) {
+      const res = await fetch(`https://temp.imgur.gg/api/file/${id}`).catch(() => null);
+      if (res?.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.cdnUrl) return data.cdnUrl;
+      }
+    }
+  }
+  return null;
+}
+
+function isDirectlyDownloadable(url: string): boolean {
+  return url.includes('pillows.su/f/') || url.includes('pillowcase.su/f/') || url.includes('temp.imgur.gg/f/');
 }
 
 export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong, onToast }: Props) {
@@ -37,8 +62,79 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
   const [renameValue, setRenameValue] = useState('');
   const [creatingNew, setCreatingNew] = useState(false);
   const [newName, setNewName] = useState('');
+  const [downloading, setDownloading] = useState(false);
 
   const selectedPlaylist = playlists.find(p => p.id === selectedId) ?? null;
+
+  const downloadZip = async (playlist: ReturnType<typeof usePlaylists>['playlists'][0]) => {
+    if (downloading) return;
+    setDownloading(true);
+    onToast?.('Building zip...');
+
+    const zip = new JSZip();
+    const songs = resolvePlaylistSongs(playlist, eras);
+    const usedNames = new Set<string>();
+
+    let tracklist = `${playlist.name}\n${'─'.repeat(playlist.name.length)}\n\n`;
+    let downloaded = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < playlist.songs.length; i++) {
+      const entry = playlist.songs[i];
+      const song = songs[i];
+      const rawUrl = entry.url ?? song?.url ?? '';
+      const displayNum = String(i + 1).padStart(2, '0');
+      const baseName = `${displayNum}. ${entry.songName}`;
+
+      tracklist += `${baseName}`;
+      if (rawUrl) tracklist += `\n  ${rawUrl}`;
+      tracklist += '\n\n';
+
+      if (!rawUrl || !isDirectlyDownloadable(rawUrl)) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        const fetchUrl = await resolveDownloadUrl(rawUrl);
+        if (!fetchUrl) { skipped++; continue; }
+
+        const res = await fetch(fetchUrl).catch(() => null);
+        if (!res?.ok) { skipped++; continue; }
+
+        const ct = res.headers.get('content-type') ?? '';
+        if (ct.startsWith('text/html') || ct.startsWith('application/json')) { skipped++; continue; }
+
+        const blob = await res.blob();
+        const ext = ct.includes('flac') ? '.flac' : ct.includes('wav') ? '.wav' : '.mp3';
+        let fileName = `${baseName}${ext}`;
+        if (usedNames.has(fileName)) {
+          fileName = `${baseName} (${i + 1})${ext}`;
+        }
+        usedNames.add(fileName);
+        zip.file(fileName, blob);
+        downloaded++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    zip.file('tracklist.txt', tracklist);
+
+    try {
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const zipName = `${playlist.name.replace(/[^a-z0-9 ]/gi, '_')}.zip`;
+      saveAs(zipBlob, zipName);
+      const msg = downloaded > 0
+        ? `Downloaded ${downloaded} file${downloaded !== 1 ? 's' : ''}${skipped > 0 ? ` (${skipped} skipped — non-direct links)` : ''}`
+        : `No downloadable files found — tracklist saved to zip`;
+      onToast?.(msg);
+    } catch {
+      onToast?.('Failed to create zip');
+    }
+
+    setDownloading(false);
+  };
 
   const filteredPlaylists = searchQuery
     ? playlists.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -96,7 +192,9 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
       className="flex h-full min-h-0"
     >
       {/* Sidebar */}
-      <div className="w-64 shrink-0 border-r border-white/5 flex flex-col">
+      <div className={`shrink-0 border-r border-white/5 flex flex-col ${
+        selectedId || creatingNew ? 'hidden md:flex md:w-64' : 'w-full md:w-64'
+      }`}>
         <div className="p-4 border-b border-white/5 flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-widest text-white/50">Playlists</span>
           <button
@@ -142,7 +240,9 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
       </div>
 
       {/* Main panel */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`overflow-y-auto ${
+        selectedId || creatingNew ? 'flex-1' : 'hidden md:block md:flex-1'
+      }`}>
         <AnimatePresence mode="wait">
           {creatingNew ? (
             <motion.div
@@ -150,8 +250,16 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="p-8 max-w-md"
+              className="max-w-md"
             >
+              <button
+                onClick={() => { setCreatingNew(false); setNewName(''); }}
+                className="md:hidden flex items-center gap-1.5 px-4 py-3 text-white/50 hover:text-white text-sm border-b border-white/5 w-full"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </button>
+              <div className="p-8">
               <h2 className="text-lg font-bold text-white mb-6">New Playlist</h2>
               <input
                 autoFocus
@@ -175,6 +283,7 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
                   Cancel
                 </button>
               </div>
+              </div>
             </motion.div>
           ) : selectedPlaylist ? (
             <motion.div
@@ -184,8 +293,17 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
               exit={{ opacity: 0 }}
               className="flex flex-col"
             >
+              {/* Mobile back button */}
+              <button
+                onClick={() => setSelectedId(null)}
+                className="md:hidden flex items-center gap-1.5 px-4 py-3 text-white/50 hover:text-white text-sm border-b border-white/5"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back
+              </button>
+
               {/* Playlist header */}
-              <div className="px-6 py-5 border-b border-white/5 flex items-start gap-5">
+              <div className="px-4 md:px-6 py-4 md:py-5 border-b border-white/5 flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5">
                 {/* Cover */}
                 <button
                   onClick={() => setShowCoverPicker(true)}
@@ -231,7 +349,7 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
                   )}
                   <p className="text-xs text-white/40 mt-0.5">{selectedPlaylist.songs.length} song{selectedPlaylist.songs.length !== 1 ? 's' : ''}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {selectedPlaylist.songs.length > 0 && (
                     <>
                       <button
@@ -250,6 +368,14 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
                       </button>
                     </>
                   )}
+                  <button
+                    onClick={() => downloadZip(selectedPlaylist)}
+                    disabled={downloading}
+                    className="p-2 rounded text-white/30 hover:text-white hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Download playlist as zip"
+                  >
+                    <Download className={`w-4 h-4 ${downloading ? 'animate-pulse' : ''}`} />
+                  </button>
                   <button
                     onClick={() => sharePlaylist(selectedPlaylist)}
                     className="p-2 rounded text-white/30 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
@@ -281,7 +407,7 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
                     return (
                       <div
                         key={`${entry.url}-${i}`}
-                        className="group flex items-center px-6 py-2.5 hover:bg-white/5 transition-colors cursor-pointer"
+                        className="group flex items-center px-4 md:px-6 py-2.5 hover:bg-white/5 transition-colors cursor-pointer"
                         onClick={() => {
                           if (!resolved) return;
                           const allSongs = resolvePlaylistSongs(selectedPlaylist, eras).filter(s => s.url || s.urls?.length);
@@ -294,7 +420,7 @@ export function PlaylistsView({ eras, artData = [], searchQuery = '', onPlaySong
                           <div className="text-sm font-medium text-white truncate">{displayName}</div>
                           <div className="text-[10px] text-white/40 mt-0.5">{displayEra}</div>
                         </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => { e.stopPropagation(); if (i > 0) moveSong(selectedPlaylist.id, i, i - 1); }}
                             disabled={i === 0}

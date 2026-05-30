@@ -94,13 +94,12 @@ export function useSpotify(enabled: boolean): { state: SpotifyState; controls: S
 
     const init = async () => {
       const token = await getSpotifyToken();
-      if (!token) { setState(s => ({ ...s, error: 'Spotify token missing — try syncing again.' })); return; }
+      if (!token) { setState(s => ({ ...s, error: 'Spotify session expired — sync VaultGold Accounts again.' })); return; }
 
       try {
         const meRes = await fetch('https://api.spotify.com/v1/me', { headers: { Authorization: `Bearer ${token}` } });
         if (!meRes.ok) { clearSpotifySession(); setState(s => ({ ...s, error: 'Spotify token invalid — please reconnect.' })); return; }
-        const me = await meRes.json();
-        if (me.product !== 'premium') { setState(s => ({ ...s, error: 'Spotify Premium is required for in-app playback.' })); return; }
+        
       } catch { setState(s => ({ ...s, error: 'Could not verify Spotify account.' })); return; }
 
       const player = new window.Spotify.Player({
