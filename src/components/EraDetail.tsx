@@ -258,18 +258,18 @@ export function EraDetail({ era, onBack, onPlaySong, searchQuery = '', filters, 
           ext = imageExt || await detectAudioExt(blob);
         } else {
           ext = await detectAudioExt(blob);
-          if (settings.embedMetadata && ext === '.mp3') {
-            const artUrl = song.image || CUSTOM_IMAGES[songEraName] || (song as any).realEra?.image || era.image;
-            try {
-              blob = await embedID3Tags(blob, {
-                title: songTitle,
-                artist: buildArtistTag(song.name, songEraName),
-                album: songEraName,
-                year: ALBUM_RELEASE_DATES[songEraName]?.split('/').pop(),
-                artworkUrl: artUrl,
-              }, songTitle);
-            } catch { /* skip tagging, save raw */ }
-          }
+        }
+        if (settings.embedMetadata && ext === '.mp3') {
+          const artUrl = song.image || CUSTOM_IMAGES[songEraName] || (song as any).realEra?.image || era.image;
+          try {
+            blob = await embedID3Tags(blob, {
+              title: songTitle,
+              artist: buildArtistTag(song.name, songEraName),
+              album: songEraName,
+              year: ALBUM_RELEASE_DATES[songEraName]?.split('/').pop(),
+              artworkUrl: artUrl,
+            }, songTitle);
+          } catch { /* skip tagging, save raw */ }
         }
         zip.file(`${fileName}${ext}`, blob);
       } catch (err) {
