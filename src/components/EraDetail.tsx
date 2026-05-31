@@ -247,7 +247,7 @@ export function EraDetail({ era, onBack, onPlaySong, searchQuery = '', filters, 
       if (!rawUrl || !(rawUrl.includes('pillows.su/f/') || rawUrl.includes('temp.imgur.gg/f/') || rawUrl.includes('ibb.co') || rawUrl.match(/\.(png|jpg|jpeg)$/i) || rawUrl.startsWith('https://i.scdn.co/'))) return;
       try {
         const { fetchUrl, isImage, imageExt } = await resolveUrl(rawUrl);
-        const res = await fetch(fetchUrl);
+        const res = await fetch(fetchUrl, { signal: AbortSignal.timeout(30000) });
         if (!res.ok) throw new Error('fetch failed');
         let blob = await res.blob();
         const songEraName = (song as any).realEra?.name || era.name;
