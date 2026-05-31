@@ -249,6 +249,7 @@ export function EraDetail({ era, onBack, onPlaySong, searchQuery = '', filters, 
         const { fetchUrl, isImage, imageExt } = await resolveUrl(rawUrl);
         const res = await fetch(fetchUrl, { signal: AbortSignal.timeout(30000) });
         if (!res.ok) throw new Error('fetch failed');
+        const ct = res.headers.get('content-type') ?? '';
         let blob = await res.blob();
         const songEraName = (song as any).realEra?.name || era.name;
         const songTitle = song.name.includes(' - ') ? song.name.substring(song.name.indexOf(' - ') + 3) : song.name;
@@ -258,6 +259,13 @@ export function EraDetail({ era, onBack, onPlaySong, searchQuery = '', filters, 
           ext = imageExt || await detectAudioExt(blob);
         } else {
           ext = await detectAudioExt(blob);
+        }
+        if (ext === '.mp3') {
+          if (ct.includes('flac'))                                     ext = '.flac';
+          else if (ct.includes('wav') || ct.includes('wave'))          ext = '.wav';
+          else if (ct.includes('aiff'))                                ext = '.aiff';
+          else if (ct.includes('ogg') || ct.includes('opus'))          ext = '.ogg';
+          else if (ct.includes('m4a') || (ct.includes('mp4') && !ct.includes('video'))) ext = '.m4a';
         }
         if (settings.embedMetadata && ext === '.mp3') {
           try {
